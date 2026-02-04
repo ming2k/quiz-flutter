@@ -19,26 +19,31 @@ class AiChatPanel extends StatefulWidget {
 }
 
 class _AiChatPanelState extends State<AiChatPanel> {
-  final AiService _aiService = AiService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _isLoading = false;
-  String _streamingResponse = '';
 
   @override
   void initState() {
     super.initState();
-    final settings = context.read<SettingsProvider>();
-    _aiService.configure(
-      apiKey: settings.aiApiKey,
-      baseUrl: settings.aiBaseUrl,
-      provider: settings.aiProvider == 'claude'
-          ? AiProvider.claude
-          : AiProvider.gemini,
-      model: settings.aiModel,
-    );
+    _configureAiService();
     _messageController.addListener(() {
       if (mounted) setState(() {});
+    });
+  }
+
+  void _configureAiService() {
+    final settings = context.read<SettingsProvider>();
+    final quiz = context.read<QuizProvider>();
+
+    quiz.setAiConfigurator((service) {
+      service.configure(
+        apiKey: settings.aiApiKey,
+        baseUrl: settings.aiBaseUrl,
+        provider: settings.aiProvider == 'claude'
+            ? AiProvider.claude
+            : AiProvider.gemini,
+        model: settings.aiModel,
+      );
     });
   }
 
@@ -53,10 +58,11 @@ class _AiChatPanelState extends State<AiChatPanel> {
   Widget build(BuildContext context) {
     final quiz = Provider.of<QuizProvider>(context);
     final messages = quiz.currentAiChatHistory;
-    
+    final aiStream = quiz.currentAiStream;
+
     // Determine total count: history + (optional) streaming bubble
-    final hasStreaming = _isLoading && _streamingResponse.isNotEmpty;
-    final hasLoadingIndicator = _isLoading && _streamingResponse.isEmpty;
+    final hasStreaming = aiStream != null && aiStream.isLoading && aiStream.streamingResponse.isNotEmpty;
+    final hasLoadingIndicator = aiStream != null && aiStream.isLoading && aiStream.streamingResponse.isEmpty;
     final extraItemCount = (hasStreaming || hasLoadingIndicator) ? 1 : 0;
     final itemCount = messages.length + extraItemCount;
 
@@ -95,6 +101,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const Spacer(),
+                // Cancel button when streaming
+                if (aiStream != null && aiStream.isLoading)
+                  IconButton(
+                    icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
+                    tooltip: 'Cancel',
+                    onPressed: () => quiz.cancelAiChat(widget.question.id),
+                  ),
                 IconButton(
                   icon: const Icon(Icons.history),
                   tooltip: 'Chat History',
@@ -125,20 +138,20 @@ class _AiChatPanelState extends State<AiChatPanel> {
                     itemCount: itemCount,
                     itemBuilder: (context, index) {
                       // Logic for reversed list with optional streaming bubble at the bottom (index 0)
-                      
+
                       // 1. Check if we are at the "bottom" (visual bottom, index 0) and have streaming/loading content
                       if (extraItemCount > 0 && index == 0) {
                         if (hasStreaming) {
-                          return _buildMessageBubble(ChatMessage(text: _streamingResponse, isUser: false));
+                          return _buildMessageBubble(ChatMessage(text: aiStream!.streamingResponse, isUser: false));
                         } else {
                           return _buildMessageBubble(ChatMessage(text: '...', isUser: false));
                         }
                       }
-                      
+
                       // 2. Otherwise, map to history messages
                       // Since we might have used index 0 for streaming, adjust the index lookup
                       final historyIndex = index - extraItemCount;
-                      
+
                       // Reverse access: 0 is the last item in the list
                       final messageIndex = messages.length - 1 - historyIndex;
                       return _buildMessageBubble(messages[messageIndex]);
@@ -190,8 +203,8 @@ class _AiChatPanelState extends State<AiChatPanel> {
                       ),
                       child: IconButton(
                         icon: Icon(
-                          Icons.arrow_upward, 
-                          size: 18, 
+                          Icons.arrow_upward,
+                          size: 18,
                           color: _messageController.text.trim().isNotEmpty
                               ? Colors.white
                               : Colors.grey,
@@ -370,13 +383,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
     final isUser = message.isUser;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
-    final bubbleColor = isUser 
-        ? colorScheme.primary 
+
+    final bubbleColor = isUser
+        ? colorScheme.primary
         : (theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200);
-        
-    final textColor = isUser 
-        ? colorScheme.onPrimary 
+
+    final textColor = isUser
+        ? colorScheme.onPrimary
         : theme.textTheme.bodyLarge?.color;
 
     return Padding(
@@ -396,7 +409,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
             ),
           ),
           child: MarkdownContent(
-            content: message.text, 
+            content: message.text,
             fontSize: 15,
             textColor: textColor,
           ),
@@ -406,47 +419,22 @@ class _AiChatPanelState extends State<AiChatPanel> {
   }
 
   Future<void> _sendMessage(String text) async {
-    if (text.trim().isEmpty || _isLoading) return;
-    final quiz = context.read<QuizProvider>();
-    _messageController.clear();
-    await quiz.addAiChatMessage(ChatMessage(text: text, isUser: true));
+    if (text.trim().isEmpty) return;
 
-    setState(() {
-      _isLoading = true;
-      _streamingResponse = '';
-    });
+    final quiz = context.read<QuizProvider>();
+
+    // Check if already streaming
+    if (quiz.isAiStreaming) return;
+
+    _messageController.clear();
 
     try {
-      final stream = _aiService.explain(
-        questionStem: widget.question.content,
-        options: {for (var c in widget.question.choices) c.key: c.content},
-        correctAnswer: widget.question.answer,
-        userQuestion: text,
-      );
-
-      await for (final chunk in stream) {
-        if (!mounted) return;
-        setState(() {
-          _streamingResponse += chunk;
-        });
-      }
-
-      if (mounted && _streamingResponse.isNotEmpty) {
-        await quiz.addAiChatMessage(ChatMessage(text: _streamingResponse, isUser: false));
-      }
+      await quiz.startAiChat(text);
     } catch (e) {
       if (mounted) {
-        await quiz.addAiChatMessage(ChatMessage(
-          text: 'Error: ${e.toString().replaceAll("Exception: ", "")}', 
-          isUser: false
-        ));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _streamingResponse = '';
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
+        );
       }
     }
   }

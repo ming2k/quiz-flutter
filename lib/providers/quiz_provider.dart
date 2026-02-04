@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 
+/// Callback for configuring AiService before use
+typedef AiServiceConfigurator = void Function(AiService service);
+
 class QuizProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
   final StorageService _storage = StorageService();
@@ -27,6 +30,11 @@ class QuizProvider extends ChangeNotifier {
   List<ChatMessage> _currentChatHistory = [];
   List<ChatSession> _chatSessions = [];
   int? _currentChatSessionId;
+
+  // AI Streaming - managed by Provider for background continuation
+  final AiService _aiService = AiService();
+  final Map<int, AiStreamState> _aiStreams = {}; // questionId -> state
+  AiServiceConfigurator? _aiConfigurator;
 
   // Progress
   UserProgress? _progress;
@@ -52,6 +60,12 @@ class QuizProvider extends ChangeNotifier {
   List<ChatMessage> get currentAiChatHistory => List.unmodifiable(_currentChatHistory);
   List<ChatSession> get chatSessions => List.unmodifiable(_chatSessions);
   int? get currentChatSessionId => _currentChatSessionId;
+
+  // AI Stream getters
+  AiStreamState? get currentAiStream => _currentQuestion != null ? _aiStreams[_currentQuestion!.id] : null;
+  bool get isAiStreaming => currentAiStream?.isLoading ?? false;
+  String get aiStreamingResponse => currentAiStream?.streamingResponse ?? '';
+  AiStreamState? getAiStream(int questionId) => _aiStreams[questionId];
   Book? get currentBook => _currentBook;
   Section? get currentSection => _currentSection;
   Question? get currentQuestion => _currentQuestion;
@@ -167,15 +181,132 @@ class QuizProvider extends ChangeNotifier {
       String title = message.text.replaceAll('\n', ' ').trim();
       if (title.length > 30) title = '${title.substring(0, 30)}...';
       if (title.isEmpty) title = 'Chat';
-      
+
       await createChatSession(title);
     }
-    
+
     if (_currentChatSessionId != null) {
       await _db.saveChatMessage(_currentChatSessionId!, message);
       _currentChatHistory.add(message);
       notifyListeners();
     }
+  }
+
+  // AI Service Configuration
+  void setAiConfigurator(AiServiceConfigurator configurator) {
+    _aiConfigurator = configurator;
+    configurator(_aiService);
+  }
+
+  /// Start AI chat stream for a question
+  /// Returns immediately, stream runs in background
+  Future<void> startAiChat(String userMessage) async {
+    if (_currentQuestion == null) return;
+
+    final questionId = _currentQuestion!.id;
+
+    // Configure AI service if configurator is set
+    if (_aiConfigurator != null) {
+      _aiConfigurator!(_aiService);
+    }
+
+    if (!_aiService.isConfigured) {
+      throw Exception('AI service not configured. Please set API key.');
+    }
+
+    // Cancel any existing stream for this question
+    await cancelAiChat(questionId);
+
+    // Add user message
+    await addAiChatMessage(ChatMessage(text: userMessage, isUser: true));
+
+    final sessionId = _currentChatSessionId!;
+
+    // Create stream state
+    final state = AiStreamState(
+      questionId: questionId,
+      sessionId: sessionId,
+    );
+    _aiStreams[questionId] = state;
+    notifyListeners();
+
+    try {
+      final stream = _aiService.explain(
+        questionStem: _currentQuestion!.content,
+        options: {for (var c in _currentQuestion!.choices) c.key: c.content},
+        correctAnswer: _currentQuestion!.answer,
+        userQuestion: userMessage,
+      );
+
+      final subscription = stream.listen(
+        (chunk) {
+          state.streamingResponse += chunk;
+          notifyListeners();
+        },
+        onError: (error) async {
+          state.isLoading = false;
+          state.error = error.toString().replaceAll("Exception: ", "");
+          await addAiChatMessage(ChatMessage(
+            text: 'Error: ${state.error}',
+            isUser: false,
+          ));
+          notifyListeners();
+        },
+        onDone: () async {
+          state.isLoading = false;
+          if (state.streamingResponse.isNotEmpty && state.error == null) {
+            await _saveStreamResponse(sessionId, state.streamingResponse);
+          }
+          notifyListeners();
+        },
+        cancelOnError: true,
+      );
+
+      state.setSubscription(subscription);
+    } catch (e) {
+      state.isLoading = false;
+      state.error = e.toString().replaceAll("Exception: ", "");
+      await addAiChatMessage(ChatMessage(
+        text: 'Error: ${state.error}',
+        isUser: false,
+      ));
+      notifyListeners();
+    }
+  }
+
+  /// Save completed stream response to chat history
+  Future<void> _saveStreamResponse(int sessionId, String response) async {
+    // Find the state with this sessionId to check if it's still valid
+    final state = _aiStreams.values.where((s) => s.sessionId == sessionId).firstOrNull;
+    if (state == null) return;
+
+    // Check if this session is still current for the question
+    if (_currentQuestion?.id == state.questionId && _currentChatSessionId == sessionId) {
+      await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
+      _currentChatHistory.add(ChatMessage(text: response, isUser: false));
+    } else {
+      // Save directly to DB even if not current
+      await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
+    }
+  }
+
+  /// Cancel AI chat stream for a specific question
+  Future<void> cancelAiChat(int questionId) async {
+    final state = _aiStreams[questionId];
+    if (state != null) {
+      await state.cancel();
+      _aiStreams.remove(questionId);
+      notifyListeners();
+    }
+  }
+
+  /// Cancel all active AI streams
+  Future<void> cancelAllAiChats() async {
+    for (final state in _aiStreams.values) {
+      await state.cancel();
+    }
+    _aiStreams.clear();
+    notifyListeners();
   }
 
   // Delete Book
@@ -677,6 +808,11 @@ class QuizProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveTimer?.cancel();
+    // Cancel all AI streams
+    for (final state in _aiStreams.values) {
+      state.cancel();
+    }
+    _aiStreams.clear();
     super.dispose();
   }
 }

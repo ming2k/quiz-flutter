@@ -5,3 +5,4 @@ export 'user_progress.dart';
 export 'test_history.dart';
 export 'chat_message.dart';
 export 'chat_session.dart';
+export 'ai_stream_state.dart';
