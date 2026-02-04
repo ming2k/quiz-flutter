@@ -1,0 +1,63 @@
+# Flutter/Dart
+# -----------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android
+# -----------------
+android/**/generated/
+android/app/src/main/res/drawable-*/
+android/app/src/main/res/mipmap-*/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+.gradle/
+captures/
+**/google-services.json
+
+# iOS/macOS
+# -----------------
+ios/Pods/
+ios/.generated/
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+macos/Pods/
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+**/ios/DerivedData/
+*.swp
+*~
+.DS_Store
+
+# IDEs
+# -----------------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Custom / Tools
+# -----------------
+flutter_*.log
+tools/create_test_db.py
+tools/generate_icon.py
+tools/generate_sounds.py
+tools/export_package.py
+tools/create_packages.py
+assets/database/quiz_test.db
+output/
+tmp_packages/

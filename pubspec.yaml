@@ -1,0 +1,68 @@
+name: quiz_app
+description: "A general extensible quiz framework for learning and practice."
+publish_to: 'none'
+version: 2.0.0+1
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  provider: ^6.1.2
+
+  # Database
+  sqflite: ^2.4.2
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+  # Local Storage
+  shared_preferences: ^2.3.5
+
+  # Web View
+  webview_flutter: ^4.10.0
+
+  # HTTP for AI APIs
+  http: ^1.3.0
+
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # UI Components
+  flutter_svg: ^2.0.17
+  confetti: ^0.8.0
+  audioplayers: ^6.4.0
+  vibration: ^3.1.5
+
+  # Utils
+  collection: ^1.19.1
+  file_picker: ^10.3.10
+  archive: ^4.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/sounds/
+    - assets/packages/
+
+#  fonts:
+#    - family: NotoSansSC
+#      fonts:
+#        - asset: assets/fonts/NotoSansSC-Regular.ttf
+#        - asset: assets/fonts/NotoSansSC-Medium.ttf
+#          weight: 500
+#        - asset: assets/fonts/NotoSansSC-Bold.ttf
+#          weight: 700
