@@ -1,106 +1,66 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryLight = Color(0xFF1976D2);
-  static const Color primaryDark = Color(0xFF90CAF9);
+  // Seed color
+  static const Color seedColor = Color(0xFF1976D2);
 
-  static const Color successLight = Color(0xFF4CAF50);
-  static const Color successDark = Color(0xFF81C784);
+  // Custom semantic colors (if needed beyond standard scheme)
+  static const Color success = Color(0xFF4CAF50);
+  static const Color warning = Color(0xFFFFC107);
 
-  static const Color errorLight = Color(0xFFF44336);
-  static const Color errorDark = Color(0xFFEF5350);
+  static ThemeData lightTheme = _buildTheme(Brightness.light);
+  static ThemeData darkTheme = _buildTheme(Brightness.dark);
 
-  static const Color warningLight = Color(0xFFFFC107);
-  static const Color warningDark = Color(0xFFFFD54F);
+  static ThemeData _buildTheme(Brightness brightness) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    );
 
-  static ThemeData lightTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.light,
-    colorScheme: ColorScheme.light(
-      primary: primaryLight,
-      secondary: const Color(0xFF03A9F4),
-      surface: Colors.white,
-      error: errorLight,
-    ),
-    scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryLight,
-      foregroundColor: Colors.white,
-      elevation: 0,
-    ),
-    cardTheme: CardThemeData(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      brightness: brightness,
+      
+      // Components
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
       ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      cardTheme: CardThemeData(
+        elevation: 1, // M3 default is lower
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-    ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Colors.white,
-      selectedItemColor: primaryLight,
-      unselectedItemColor: Colors.grey,
-    ),
-  );
-
-  static ThemeData darkTheme = ThemeData(
-    useMaterial3: true,
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.dark(
-      primary: primaryDark,
-      secondary: const Color(0xFF4FC3F7),
-      surface: const Color(0xFF1E1E1E),
-      error: errorDark,
-    ),
-    scaffoldBackgroundColor: const Color(0xFF121212),
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF1E1E1E),
-      foregroundColor: Colors.white,
-      elevation: 0,
-    ),
-    cardTheme: CardThemeData(
-      elevation: 2,
-      color: const Color(0xFF2D2D2D),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
       ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        filled: true,
+        fillColor: brightness == Brightness.light 
+            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
-      filled: true,
-      fillColor: const Color(0xFF2D2D2D),
-    ),
-    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: Color(0xFF1E1E1E),
-      selectedItemColor: primaryDark,
-      unselectedItemColor: Colors.grey,
-    ),
-  );
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: colorScheme.inverseSurface,
+        contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+      ),
+    );
+  }
 
-  // Option colors
+  // Option colors - using ColorScheme roles
   static Color getOptionColor(
     BuildContext context, {
     required bool isSelected,
@@ -108,21 +68,24 @@ class AppTheme {
     required bool isCorrect,
     required bool isThisCorrectAnswer,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (!showResult) {
       if (isSelected) {
-        return isDark ? primaryDark.withValues(alpha: 0.3) : primaryLight.withValues(alpha: 0.2);
+        return colorScheme.primaryContainer.withValues(alpha: 0.5);
       }
       return Colors.transparent;
     }
 
     if (isThisCorrectAnswer) {
-      return isDark ? successDark.withValues(alpha: 0.3) : successLight.withValues(alpha: 0.2);
+      // Success is not standard, use green or a custom extension in real world.
+      // For now, mapping to a "success-like" color if available, or just keeping the green constant but adapting opacity.
+      // Better: Use a tertiary or just the hardcoded success/green for specific semantics that Material doesn't cover strictly.
+      return success.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.2);
     }
 
     if (isSelected && !isCorrect) {
-      return isDark ? errorDark.withValues(alpha: 0.3) : errorLight.withValues(alpha: 0.2);
+      return colorScheme.errorContainer;
     }
 
     return Colors.transparent;
@@ -135,23 +98,30 @@ class AppTheme {
     required bool isCorrect,
     required bool isThisCorrectAnswer,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (!showResult) {
       if (isSelected) {
-        return isDark ? primaryDark : primaryLight;
+        return colorScheme.primary;
       }
-      return isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+      return colorScheme.outline;
     }
 
     if (isThisCorrectAnswer) {
-      return isDark ? successDark : successLight;
+      return success;
     }
 
     if (isSelected && !isCorrect) {
-      return isDark ? errorDark : errorLight;
+      return colorScheme.error;
     }
 
-    return isDark ? Colors.grey.shade700 : Colors.grey.shade300;
+    return colorScheme.outlineVariant;
   }
+  
+  // Helpers for legacy access if needed, but prefer Theme.of(context)
+  static Color get primaryLight => seedColor;
+  static Color get primaryDark => const Color(0xFF90CAF9); // Approximation
+  static Color get successLight => success;
+  static Color get warningLight => warning;
+  static Color get errorLight => Colors.red;
 }

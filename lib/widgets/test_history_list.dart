@@ -71,7 +71,10 @@ class _TestHistoryListState extends State<TestHistoryList> {
   }
 
   Widget _buildHistoryCard(TestHistoryEntry entry) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isPass = entry.accuracy >= 0.6;
+    final passColor = AppTheme.success;
+    final failColor = colorScheme.error;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -114,18 +117,18 @@ class _TestHistoryListState extends State<TestHistoryList> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: isPass
-                        ? AppTheme.successLight.withValues(alpha: 0.1)
-                        : AppTheme.errorLight.withValues(alpha: 0.1),
+                        ? passColor.withValues(alpha: 0.1)
+                        : failColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isPass ? AppTheme.successLight : AppTheme.errorLight,
+                      color: isPass ? passColor : failColor,
                     ),
                   ),
                   child: Text(
                     entry.accuracyPercent,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: isPass ? AppTheme.successLight : AppTheme.errorLight,
+                      color: isPass ? passColor : failColor,
                     ),
                   ),
                 ),
@@ -137,17 +140,17 @@ class _TestHistoryListState extends State<TestHistoryList> {
                       _buildMiniStat(
                         '总题',
                         entry.totalQuestions.toString(),
-                        Colors.blue,
+                        colorScheme.primary,
                       ),
                       _buildMiniStat(
                         '正确',
                         entry.correctCount.toString(),
-                        AppTheme.successLight,
+                        passColor,
                       ),
                       _buildMiniStat(
                         '错误',
                         entry.wrongCount.toString(),
-                        AppTheme.errorLight,
+                        failColor,
                       ),
                     ],
                   ),
@@ -181,6 +184,7 @@ class _TestHistoryListState extends State<TestHistoryList> {
   }
 
   void _confirmClear() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -200,8 +204,8 @@ class _TestHistoryListState extends State<TestHistoryList> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorLight,
-              foregroundColor: Colors.white,
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
             ),
             child: const Text('清除'),
           ),

@@ -50,6 +50,12 @@ macos/Flutter/ephemeral/
 *.ipr
 *.iws
 
+# Python
+# -----------------
+__pycache__/
+*.pyc
+*.pyo
+
 # Custom / Tools
 # -----------------
 flutter_*.log
@@ -61,3 +67,16 @@ tools/create_packages.py
 assets/database/quiz_test.db
 output/
 tmp_packages/
+
+# Release & Keys
+# -----------------
+*.jks
+*.keystore
+android/key.properties
+android/upload-keystore.jks
+
+# AI / Local Settings
+# -----------------
+.claude/
+.env
+*.local.json

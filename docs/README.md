@@ -28,7 +28,7 @@ On first launch, if no question banks exist, the app automatically imports a bui
 - **Multiple Quiz Modes**: Practice, Review, Memorize, and Test modes
 - **Progress Tracking**: Automatically saves your progress per question bank
 - **Import Packages**: Import custom question banks via ZIP files
-- **AI Explanations**: Get AI-powered explanations using Gemini or Claude
+- **AI Explanations**: Get AI-powered explanations with Markdown and LaTeX support
 - **Sound & Visual Feedback**: Configurable sound effects, vibration, and confetti
 - **Localization**: Supports English and Chinese
 - **Dark Mode**: System, light, or dark theme options

@@ -10,7 +10,7 @@ import '../widgets/question_card.dart';
 import '../widgets/section_selector.dart';
 import '../widgets/ai_chat_panel.dart';
 import '../widgets/test_history_list.dart';
-import 'overview_screen.dart';
+import '../widgets/overview_sheet.dart';
 import 'test_result_screen.dart';
 import 'settings_screen.dart';
 
@@ -23,9 +23,14 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   late ConfettiController _confettiController;
+  late PageController _pageController;
   final SoundService _soundService = SoundService();
+  
+  // Local state to track selection before confirmation/animation
   String? _selectedOption;
-  bool _hasAnswered = false;
+  
+  // Track if we are currently animating the page
+  bool _isAnimatingPage = false;
 
   @override
   void initState() {
@@ -33,19 +38,31 @@ class _QuizScreenState extends State<QuizScreen> {
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 2));
     _soundService.init();
+    
+    final quiz = context.read<QuizProvider>();
+    _pageController = PageController(initialPage: quiz.currentIndex);
   }
 
   @override
   void dispose() {
     _confettiController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final quiz = context.read<QuizProvider>();
-    final settings = context.read<SettingsProvider>();
+    final quiz = context.watch<QuizProvider>();
+    final settings = context.watch<SettingsProvider>();
+
+    // Sync PageController with QuizProvider index if changed externally (e.g. Overview)
+    if (_pageController.hasClients && !_isAnimatingPage) {
+      final currentPage = _pageController.page?.round() ?? 0;
+      if (currentPage != quiz.currentIndex) {
+        _pageController.jumpToPage(quiz.currentIndex);
+      }
+    }
 
     return Scaffold(
       appBar: _buildAppBar(context, l10n),
@@ -53,44 +70,55 @@ class _QuizScreenState extends State<QuizScreen> {
         children: [
           Column(
             children: [
-              // Question Card
+              // Question PageView
               Expanded(
-                child: Selector<QuizProvider, Question?>(
-                  selector: (_, provider) => provider.currentQuestion,
-                  builder: (context, question, _) {
-                    if (question == null) {
-                      return Center(child: Text(l10n.get('loading')));
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: quiz.totalQuestions,
+                  // Disable user swiping to prevent conflict with vertical scrolling
+                  physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) {
+                    if (!_isAnimatingPage) {
+                      quiz.goToQuestion(index);
+                      setState(() {
+                        _selectedOption = null;
+                      });
                     }
-                    // This consumer is for the answer state, which changes often
-                    return Consumer<QuizProvider>(
-                      builder: (context, quiz, _) {
-                        final currentAnswer = quiz.currentUserAnswer;
-                        _hasAnswered = currentAnswer != null;
-                        return QuestionCard(
-                          question: question,
-                          questionIndex: quiz.currentIndex,
-                          totalQuestions: quiz.totalQuestions,
-                          selectedOption: _selectedOption ?? currentAnswer?.selected,
-                          showAnswer: _hasAnswered || quiz.appMode == AppMode.memorize,
-                          isCorrect: currentAnswer?.isCorrect,
-                          isMarked: quiz.isCurrentMarked,
-                          showAnalysis: settings.showAnalysis,
-                          imageBasePath: quiz.currentPackageImagePath,
-                          onAiExplain: () => _showAiPanel(question),
-                          onOptionSelected: _hasAnswered
-                              ? null
-                              : (option) => _handleAnswer(option),
-                          onMarkToggle: quiz.toggleMark,
-                          onReset: _hasAnswered
-                              ? () {
-                                  quiz.resetCurrentQuestion();
-                                  setState(() {
-                                    _selectedOption = null;
-                                  });
-                                }
-                              : null,
-                        );
-                      },
+                  },
+                  itemBuilder: (context, index) {
+                    if (index >= quiz.totalQuestions) return const SizedBox.shrink();
+                    
+                    final question = quiz.questions[index];
+                    
+                    // Note: Adjacent pages might not have perfect answer state until they become current
+                    // due to QuizProvider architecture, but pre-rendering the WebView content
+                    // is the priority for performance.
+                    final isCurrent = index == quiz.currentIndex;
+                    final answer = isCurrent ? quiz.currentUserAnswer : null; 
+                    
+                    return QuestionCard(
+                      question: question,
+                      questionIndex: index,
+                      totalQuestions: quiz.totalQuestions,
+                      selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
+                      showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
+                      isCorrect: isCurrent ? answer?.isCorrect : null,
+                      isMarked: quiz.isMarked(question.id),
+                      showAnalysis: settings.showAnalysis,
+                      imageBasePath: quiz.currentPackageImagePath,
+                      onAiExplain: () => _showAiPanel(question),
+                      onOptionSelected: (isCurrent && answer != null)
+                          ? null
+                          : (option) => _handleAnswer(option, index),
+                      onMarkToggle: () => quiz.toggleMark(question.id),
+                      onReset: (isCurrent && answer != null)
+                          ? () {
+                              quiz.resetCurrentQuestion();
+                              setState(() {
+                                _selectedOption = null;
+                              });
+                            }
+                          : null,
                     );
                   },
                 ),
@@ -165,9 +193,11 @@ class _QuizScreenState extends State<QuizScreen> {
           key: const Key('quiz_overview_button'),
           icon: const Icon(Icons.grid_view),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const OverviewScreen()),
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const OverviewSheet(),
             );
           },
         ),
@@ -251,7 +281,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: ElevatedButton.icon(
                   key: const Key('quiz_prev_button'),
                   onPressed:
-                      quiz.currentIndex > 0 ? quiz.previousQuestion : null,
+                      quiz.currentIndex > 0 ? () => _animateToPage(quiz.currentIndex - 1) : null,
                   icon: const Icon(Icons.arrow_back),
                   label: Text(l10n.get('previous')),
                 ),
@@ -273,12 +303,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 child: ElevatedButton.icon(
                   key: const Key('quiz_next_button'),
                   onPressed: quiz.currentIndex < quiz.totalQuestions - 1
-                      ? () {
-                          quiz.nextQuestion();
-                          setState(() {
-                            _selectedOption = null;
-                          });
-                        }
+                      ? () => _animateToPage(quiz.currentIndex + 1)
                       : null,
                   icon: const Icon(Icons.arrow_forward),
                   label: Text(l10n.get('next')),
@@ -291,25 +316,47 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
+  void _animateToPage(int page) {
+    if (_pageController.hasClients) {
+      _isAnimatingPage = true;
+      _pageController.animateToPage(
+        page,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      ).then((_) {
+        _isAnimatingPage = false;
+        // Ensure the provider is updated after animation if not already
+        if (mounted) {
+           // Reset transient selection state for the new page
+           setState(() {
+             _selectedOption = null;
+           });
+
+           final quiz = context.read<QuizProvider>();
+           if (quiz.currentIndex != page) {
+             quiz.goToQuestion(page);
+           }
+        }
+      });
+    }
+  }
+
   void _showAiPanel(Question question) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.75,
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, controller) => AiChatPanel(
-          question: question,
-        ),
+      backgroundColor: Colors.transparent,
+      builder: (_) => AiChatPanel(
+        question: question,
       ),
     );
   }
 
-  void _handleAnswer(String option) {
+  void _handleAnswer(String option, int questionIndex) {
     final quiz = context.read<QuizProvider>();
     final settings = context.read<SettingsProvider>();
+
+    if (questionIndex != quiz.currentIndex) return;
 
     setState(() {
       _selectedOption = option;
@@ -344,11 +391,9 @@ class _QuizScreenState extends State<QuizScreen> {
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           final currentQuiz = context.read<QuizProvider>();
-          if (currentQuiz.currentIndex < currentQuiz.totalQuestions - 1) {
-            currentQuiz.nextQuestion();
-            setState(() {
-              _selectedOption = null;
-            });
+          if (currentQuiz.currentIndex == questionIndex && 
+              currentQuiz.currentIndex < currentQuiz.totalQuestions - 1) {
+            _animateToPage(currentQuiz.currentIndex + 1);
           }
         }
       });
@@ -366,7 +411,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _showExitTestDialog() {
     final l10n = AppLocalizations.of(context);
-    final quiz = context.read<QuizProvider>();
 
     showDialog(
       context: context,

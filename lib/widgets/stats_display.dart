@@ -7,6 +7,7 @@ class StatsDisplay extends StatefulWidget {
   final int totalQuestions;
   final int correctCount;
   final int wrongCount;
+  final int markedCount;
   final double accuracy;
   final bool isTestMode;
   final int testStartTime;
@@ -17,6 +18,7 @@ class StatsDisplay extends StatefulWidget {
     required this.totalQuestions,
     required this.correctCount,
     required this.wrongCount,
+    required this.markedCount,
     required this.accuracy,
     this.isTestMode = false,
     this.testStartTime = 0,
@@ -96,7 +98,7 @@ class _StatsDisplayState extends State<StatsDisplay> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 6,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(
                 Theme.of(context).colorScheme.primary,
               ),
@@ -120,7 +122,7 @@ class _StatsDisplayState extends State<StatsDisplay> {
               _buildStatChip(
                 icon: Icons.check_circle,
                 label: '${widget.correctCount}',
-                color: AppTheme.successLight,
+                color: AppTheme.success,
               ),
               const SizedBox(width: 12),
 
@@ -128,15 +130,15 @@ class _StatsDisplayState extends State<StatsDisplay> {
               _buildStatChip(
                 icon: Icons.cancel,
                 label: '${widget.wrongCount}',
-                color: AppTheme.errorLight,
+                color: Theme.of(context).colorScheme.error,
               ),
               const SizedBox(width: 12),
 
-              // Accuracy
+              // Marked
               _buildStatChip(
-                icon: Icons.percent,
-                label: '${(widget.accuracy * 100).toStringAsFixed(0)}%',
-                color: Colors.blue,
+                icon: Icons.bookmark,
+                label: '${widget.markedCount}',
+                color: AppTheme.warning,
               ),
 
               // Timer (test mode)

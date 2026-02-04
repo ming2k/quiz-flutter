@@ -16,9 +16,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  AppMode _selectedMode = AppMode.practice;
-  int _testQuestionCount = 50;
-
   @override
   void initState() {
     super.initState();
@@ -152,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -198,12 +196,18 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           return ReorderableListView(
-            header: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                l10n.selectQuestionBank,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+            header: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildModeSelector(context, l10n, settings),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Text(
+                    l10n.selectQuestionBank,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
             ),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             onReorder: (oldIndex, newIndex) {
@@ -215,6 +219,49 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildModeSelector(BuildContext context, AppLocalizations l10n, SettingsProvider settings) {
+    final modes = [
+      (AppMode.practice, l10n.practiceMode, Icons.edit_note),
+      (AppMode.review, l10n.reviewMode, Icons.rate_review),
+      (AppMode.memorize, l10n.memorizeMode, Icons.psychology),
+      (AppMode.test, l10n.testMode, Icons.timer),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: modes.map((mode) {
+          final isSelected = settings.lastAppMode == mode.$1;
+          final color = isSelected
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurfaceVariant;
+
+          return IconButton(
+            icon: Icon(mode.$3),
+            iconSize: 32,
+            color: color,
+            tooltip: mode.$2,
+            onPressed: () {
+              if (settings.lastAppMode != mode.$1) {
+                settings.setLastAppMode(mode.$1);
+                
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(mode.$2),
+                    duration: const Duration(seconds: 1),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+          );
+        }).toList(),
       ),
     );
   }
@@ -264,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: InkWell(
-          onTap: () => _showModeSelectionSheet(book, l10n),
+          onTap: () => _startPractice(book),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -310,194 +357,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showModeSelectionSheet(Book book, AppLocalizations l10n) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24 + 16), // Extra padding for bottom safe area
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    book.getDisplayName(l10n.locale.languageCode),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.selectMode,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildModeSelector(l10n, setModalState),
-                  const SizedBox(height: 24),
-
-                  // Test Question Count (only for test mode)
-                  if (_selectedMode == AppMode.test) ...[
-                    _buildTestQuestionCountSelector(l10n, setModalState),
-                    const SizedBox(height: 24),
-                  ],
-
-                  // Start Button
-                  ElevatedButton(
-                    key: const Key('home_start_button'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _startPractice(book);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      _selectedMode == AppMode.test
-                          ? l10n.get('startTest')
-                          : l10n.startPractice,
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildModeSelector(AppLocalizations l10n, StateSetter setModalState) {
-    final modes = [
-      (AppMode.practice, l10n.practiceMode, l10n.get('practiceModeDesc'), Icons.edit_note),
-      (AppMode.review, l10n.reviewMode, l10n.get('reviewModeDesc'), Icons.rate_review),
-      (AppMode.memorize, l10n.memorizeMode, l10n.get('memorizeModeDesc'), Icons.psychology),
-      (AppMode.test, l10n.testMode, l10n.get('testModeDesc'), Icons.timer),
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: modes.map((mode) {
-        final isSelected = _selectedMode == mode.$1;
-        return ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 150),
-          child: Card(
-            key: ValueKey('mode_${mode.$1.name}'),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.transparent,
-                width: 2,
-              ),
-            ),
-            child: InkWell(
-              onTap: () {
-                setModalState(() {
-                  _selectedMode = mode.$1;
-                });
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Icon(
-                      mode.$4,
-                      size: 32,
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      mode.$2,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      mode.$3,
-                      style: Theme.of(context).textTheme.bodySmall,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildTestQuestionCountSelector(AppLocalizations l10n, StateSetter setModalState) {
-    return Card(
-      key: const Key('home_test_count_selector'),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Text(
-              l10n.get('testQuestionCount'),
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const Spacer(),
-            IconButton(
-              key: const Key('home_test_count_decrease'),
-              onPressed: _testQuestionCount > 10
-                  ? () => setModalState(() => _testQuestionCount -= 10)
-                  : null,
-              icon: const Icon(Icons.remove),
-            ),
-            Container(
-              width: 60,
-              alignment: Alignment.center,
-              child: Text(
-                '$_testQuestionCount',
-                key: const Key('home_test_count_text'),
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            IconButton(
-              key: const Key('home_test_count_increase'),
-              onPressed: _testQuestionCount < 100
-                  ? () => setModalState(() => _testQuestionCount += 10)
-                  : null,
-              icon: const Icon(Icons.add),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _startPractice(Book book, {bool autoStart = false}) async {
     final quiz = context.read<QuizProvider>();
+    final settings = context.read<SettingsProvider>();
     await quiz.selectBook(book);
 
     // If auto-starting, use the mode from saved progress.
-    // Otherwise, use the mode selected in the UI.
-    final modeToSet = autoStart ? quiz.appMode : _selectedMode;
+    // Otherwise, use the mode from settings (global selection).
+    final modeToSet = autoStart ? quiz.appMode : settings.lastAppMode;
 
     if (modeToSet == AppMode.test) {
-      quiz.startTest(_testQuestionCount);
+      quiz.startTest(settings.testQuestionCount);
     } else {
-      quiz.setMode(modeToSet);
+      quiz.setMode(modeToSet, index: quiz.currentIndex);
     }
 
     if (mounted) {

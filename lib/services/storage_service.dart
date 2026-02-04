@@ -7,25 +7,18 @@ class StorageService {
   factory StorageService() => _instance;
   StorageService._internal();
 
-  SharedPreferences? _prefs;
-
-  Future<SharedPreferences> get prefs async {
-    _prefs ??= await SharedPreferences.getInstance();
-    return _prefs!;
-  }
+  final SharedPreferencesAsync _asyncPrefs = SharedPreferencesAsync();
 
   // Progress Storage
   Future<void> saveProgress(UserProgress progress) async {
-    final p = await prefs;
-    await p.setString(
+    await _asyncPrefs.setString(
       'progress_${progress.bankFilename}',
       progress.toJsonString(),
     );
   }
 
   Future<UserProgress?> loadProgress(String bankFilename) async {
-    final p = await prefs;
-    final jsonStr = p.getString('progress_$bankFilename');
+    final jsonStr = await _asyncPrefs.getString('progress_$bankFilename');
     if (jsonStr == null) return null;
     try {
       return UserProgress.fromJsonString(jsonStr);
@@ -34,26 +27,18 @@ class StorageService {
     }
   }
 
-  Future<void> deleteProgress(String bankFilename) async {
-    final p = await prefs;
-    await p.remove('progress_$bankFilename');
-  }
-
   // Test History Storage
   Future<void> addHistoryEntry(TestHistoryEntry entry) async {
-    final p = await prefs;
     final historyKey = 'history_${entry.bankFilename}';
-    final existing = p.getStringList(historyKey) ?? [];
+    final existing = await _asyncPrefs.getStringList(historyKey) ?? [];
     existing.add(entry.toJsonString());
-    await p.setStringList(historyKey, existing);
+    await _asyncPrefs.setStringList(historyKey, existing);
   }
 
   Future<List<TestHistoryEntry>> getHistoryEntries(String? bankFilename) async {
-    final p = await prefs;
-
     if (bankFilename != null) {
       final historyKey = 'history_$bankFilename';
-      final entries = p.getStringList(historyKey) ?? [];
+      final entries = await _asyncPrefs.getStringList(historyKey) ?? [];
       return entries
           .map((e) {
             try {
@@ -67,10 +52,10 @@ class StorageService {
     }
 
     final allEntries = <TestHistoryEntry>[];
-    final keys = p.getKeys().where((k) => k.startsWith('history_'));
+    final keys = (await _asyncPrefs.getKeys()).where((k) => k.startsWith('history_'));
 
     for (final key in keys) {
-      final entries = p.getStringList(key) ?? [];
+      final entries = await _asyncPrefs.getStringList(key) ?? [];
       for (final e in entries) {
         try {
           allEntries.add(TestHistoryEntry.fromJsonString(e));
@@ -83,51 +68,65 @@ class StorageService {
   }
 
   Future<void> clearAllHistory() async {
-    final p = await prefs;
-    final keys = p.getKeys().where((k) => k.startsWith('history_')).toList();
+    final keys = (await _asyncPrefs.getKeys()).where((k) => k.startsWith('history_')).toList();
     for (final key in keys) {
-      await p.remove(key);
+      await _asyncPrefs.remove(key);
     }
   }
 
   // Settings Storage
   Future<void> saveSetting(String key, dynamic value) async {
-    final p = await prefs;
     if (value is String) {
-      await p.setString(key, value);
+      await _asyncPrefs.setString(key, value);
     } else if (value is int) {
-      await p.setInt(key, value);
+      await _asyncPrefs.setInt(key, value);
     } else if (value is double) {
-      await p.setDouble(key, value);
+      await _asyncPrefs.setDouble(key, value);
     } else if (value is bool) {
-      await p.setBool(key, value);
+      await _asyncPrefs.setBool(key, value);
     } else if (value is List<String>) {
-      await p.setStringList(key, value);
+      await _asyncPrefs.setStringList(key, value);
     } else {
-      await p.setString(key, jsonEncode(value));
+      await _asyncPrefs.setString(key, jsonEncode(value));
     }
   }
 
   Future<T?> loadSetting<T>(String key, {T? defaultValue}) async {
-    final p = await prefs;
-    final value = p.get(key);
+    // SharedPreferencesAsync requires explicit type getters
+    Object? value;
+    if (T == String) {
+      value = await _asyncPrefs.getString(key);
+    } else if (T == int) {
+      value = await _asyncPrefs.getInt(key);
+    } else if (T == double) {
+      value = await _asyncPrefs.getDouble(key);
+    } else if (T == bool) {
+      value = await _asyncPrefs.getBool(key);
+    } else if (T == List<String>) {
+      value = await _asyncPrefs.getStringList(key);
+    } else {
+      // Fallback for complex types stored as JSON strings
+      final jsonStr = await _asyncPrefs.getString(key);
+      if (jsonStr != null && T != dynamic) {
+        try {
+          return jsonDecode(jsonStr) as T?;
+        } catch (_) {
+          return defaultValue;
+        }
+      }
+      value = jsonStr;
+    }
+
     if (value == null) return defaultValue;
     return value as T?;
   }
 
-  Future<void> removeSetting(String key) async {
-    final p = await prefs;
-    await p.remove(key);
-  }
-
   // Last Opened Bank
   Future<void> saveLastOpenedBank(String bankFilename) async {
-    final p = await prefs;
-    await p.setString('last_opened_bank', bankFilename);
+    await _asyncPrefs.setString('last_opened_bank', bankFilename);
   }
 
   Future<String?> loadLastOpenedBank() async {
-    final p = await prefs;
-    return p.getString('last_opened_bank');
+    return await _asyncPrefs.getString('last_opened_bank');
   }
 }

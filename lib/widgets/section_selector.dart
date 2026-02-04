@@ -21,12 +21,17 @@ class SectionSelector extends StatelessWidget {
         sections.fold<int>(0, (sum, s) => sum + s.questionCount);
 
     // Using a Column with Flexible to ensure the sheet size is based on content.
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Drag Handle
             Container(
               margin: const EdgeInsets.symmetric(vertical: 12),
@@ -45,7 +50,7 @@ class SectionSelector extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
-            const Divider(),
+            const SizedBox(height: 16),
             // Scrollable list
             ConstrainedBox(
               constraints: BoxConstraints(
@@ -76,7 +81,7 @@ class SectionSelector extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildSectionTile(

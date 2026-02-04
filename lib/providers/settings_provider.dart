@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/models.dart';
 import '../services/services.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -9,6 +10,7 @@ class SettingsProvider extends ChangeNotifier {
   String _locale = '';
 
   // Quiz Experience
+  AppMode _lastAppMode = AppMode.practice;
   bool _autoAdvance = true;
   bool _showAnalysis = true;
   bool _showNotes = true;
@@ -33,6 +35,7 @@ class SettingsProvider extends ChangeNotifier {
   ];
 
   // Getters
+  AppMode get lastAppMode => _lastAppMode;
   ThemeMode get themeMode => _themeMode;
   String get locale => _locale;
   bool get autoAdvance => _autoAdvance;
@@ -56,6 +59,16 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> _loadSettings() async {
     _themeMode = ThemeMode.values[
         await _storage.loadSetting<int>('themeMode', defaultValue: 0) ?? 0];
+    
+    final savedMode = await _storage.loadSetting<String>('lastAppMode');
+    if (savedMode != null) {
+      try {
+        _lastAppMode = AppMode.values.firstWhere((e) => e.name == savedMode);
+      } catch (_) {
+        _lastAppMode = AppMode.practice;
+      }
+    }
+
     _locale =
         await _storage.loadSetting<String>('locale', defaultValue: '') ??
             '';
@@ -110,6 +123,12 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   // Setters
+  Future<void> setLastAppMode(AppMode mode) async {
+    _lastAppMode = mode;
+    await _storage.saveSetting('lastAppMode', mode.name);
+    notifyListeners();
+  }
+
   Future<void> setThemeMode(ThemeMode mode) async {
     _themeMode = mode;
     await _storage.saveSetting('themeMode', mode.index);

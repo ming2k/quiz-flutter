@@ -23,8 +23,10 @@ dependencies:
   # Local Storage
   shared_preferences: ^2.3.5
 
-  # Web View
-  webview_flutter: ^4.10.0
+  # Markdown & LaTeX
+  flutter_markdown: ^0.7.7
+  flutter_math_fork: ^0.7.4
+  markdown: ^7.1.0
 
   # HTTP for AI APIs
   http: ^1.3.0

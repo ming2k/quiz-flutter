@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'chat_message.dart';
 
 enum AppMode { practice, review, memorize, test }
 
@@ -80,10 +79,6 @@ class UserProgress {
   final Map<AppMode, int> modePositions;
   final String currentPartitionId;
   final Map<String, Map<AppMode, int>> partitionModePositions;
-  final Map<String, List<UserAnswer>> userAnswersByPartition;
-  final Map<String, List<int>> markedQuestionsByPartition;
-  final List<String> questionNotes;
-  final Map<int, List<ChatMessage>> aiChatHistoryByQuestionId;
   final Map<String, PartitionStats> statsByPartition;
   final int timestamp;
 
@@ -94,10 +89,6 @@ class UserProgress {
     Map<AppMode, int>? modePositions,
     this.currentPartitionId = 'all',
     Map<String, Map<AppMode, int>>? partitionModePositions,
-    Map<String, List<UserAnswer>>? userAnswersByPartition,
-    Map<String, List<int>>? markedQuestionsByPartition,
-    List<String>? questionNotes,
-    Map<int, List<ChatMessage>>? aiChatHistoryByQuestionId,
     Map<String, PartitionStats>? statsByPartition,
     int? timestamp,
   })  : modePositions = modePositions ??
@@ -108,10 +99,6 @@ class UserProgress {
               AppMode.test: 0,
             },
         partitionModePositions = partitionModePositions ?? {},
-        userAnswersByPartition = userAnswersByPartition ?? {},
-        markedQuestionsByPartition = markedQuestionsByPartition ?? {},
-        questionNotes = questionNotes ?? [],
-        aiChatHistoryByQuestionId = aiChatHistoryByQuestionId ?? {},
         statsByPartition = statsByPartition ?? {},
         timestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch;
 
@@ -144,34 +131,6 @@ class UserProgress {
                 ),
               ) ??
               {},
-      userAnswersByPartition:
-          (json['userAnswersByPartition'] as Map<String, dynamic>?)?.map(
-                (k, v) => MapEntry(
-                  k,
-                  (v as List)
-                      .map((e) => e == null
-                          ? UserAnswer()
-                          : UserAnswer.fromJson(e as Map<String, dynamic>))
-                      .toList(),
-                ),
-              ) ??
-              {},
-      markedQuestionsByPartition:
-          (json['markedQuestionsByPartition'] as Map<String, dynamic>?)?.map(
-                (k, v) => MapEntry(k, (v as List).cast<int>()),
-              ) ??
-              {},
-      questionNotes:
-          (json['questionNotes'] as List?)?.cast<String>().toList() ?? [],
-      aiChatHistoryByQuestionId: (json['aiChatHistoryByQuestionId'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(
-              int.parse(k),
-              (v as List)
-                  .map((e) => ChatMessage.fromJson(e as Map<String, dynamic>))
-                  .toList(),
-            ),
-          ) ??
-          {},
       statsByPartition:
           (json['statsByPartition'] as Map<String, dynamic>?)?.map(
                 (k, v) => MapEntry(k, PartitionStats.fromJson(v)),
@@ -190,14 +149,6 @@ class UserProgress {
       'currentPartitionId': currentPartitionId,
       'partitionModePositions': partitionModePositions.map(
         (k, v) => MapEntry(k, v.map((mk, mv) => MapEntry(mk.name, mv))),
-      ),
-      'userAnswersByPartition': userAnswersByPartition.map(
-        (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
-      ),
-      'markedQuestionsByPartition': markedQuestionsByPartition,
-      'questionNotes': questionNotes,
-      'aiChatHistoryByQuestionId': aiChatHistoryByQuestionId.map(
-        (k, v) => MapEntry(k.toString(), v.map((e) => e.toJson()).toList()),
       ),
       'statsByPartition':
           statsByPartition.map((k, v) => MapEntry(k, v.toJson())),
@@ -218,10 +169,6 @@ class UserProgress {
     Map<AppMode, int>? modePositions,
     String? currentPartitionId,
     Map<String, Map<AppMode, int>>? partitionModePositions,
-    Map<String, List<UserAnswer>>? userAnswersByPartition,
-    Map<String, List<int>>? markedQuestionsByPartition,
-    List<String>? questionNotes,
-    Map<int, List<ChatMessage>>? aiChatHistoryByQuestionId,
     Map<String, PartitionStats>? statsByPartition,
     int? timestamp,
   }) {
@@ -233,12 +180,6 @@ class UserProgress {
       currentPartitionId: currentPartitionId ?? this.currentPartitionId,
       partitionModePositions:
           partitionModePositions ?? Map.from(this.partitionModePositions),
-      userAnswersByPartition:
-          userAnswersByPartition ?? Map.from(this.userAnswersByPartition),
-      markedQuestionsByPartition:
-          markedQuestionsByPartition ?? Map.from(this.markedQuestionsByPartition),
-      questionNotes: questionNotes ?? List.from(this.questionNotes),
-      aiChatHistoryByQuestionId: aiChatHistoryByQuestionId ?? Map.from(this.aiChatHistoryByQuestionId),
       statsByPartition: statsByPartition ?? Map.from(this.statsByPartition),
       timestamp: timestamp ?? DateTime.now().millisecondsSinceEpoch,
     );

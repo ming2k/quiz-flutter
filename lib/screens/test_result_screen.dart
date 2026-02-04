@@ -14,7 +14,10 @@ class TestResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final isPass = result.accuracy >= 0.6;
+    final passColor = AppTheme.success;
+    final failColor = colorScheme.error;
 
     return Scaffold(
       appBar: AppBar(
@@ -31,14 +34,14 @@ class TestResultScreen extends StatelessWidget {
               height: 120,
               decoration: BoxDecoration(
                 color: isPass
-                    ? AppTheme.successLight.withValues(alpha: 0.2)
-                    : AppTheme.errorLight.withValues(alpha: 0.2),
+                    ? passColor.withValues(alpha: 0.2)
+                    : failColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isPass ? Icons.check_circle : Icons.cancel,
                 size: 80,
-                color: isPass ? AppTheme.successLight : AppTheme.errorLight,
+                color: isPass ? passColor : failColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -48,7 +51,7 @@ class TestResultScreen extends StatelessWidget {
               result.accuracyPercent,
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: isPass ? AppTheme.successLight : AppTheme.errorLight,
+                    color: isPass ? passColor : failColor,
                   ),
             ),
             Text(
@@ -68,7 +71,7 @@ class TestResultScreen extends StatelessWidget {
                     icon: Icons.help_outline,
                     label: l10n.get('totalQuestions'),
                     value: result.totalQuestions.toString(),
-                    color: Colors.blue,
+                    color: colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -78,7 +81,7 @@ class TestResultScreen extends StatelessWidget {
                     icon: Icons.check,
                     label: l10n.get('correctCount'),
                     value: result.correctCount.toString(),
-                    color: AppTheme.successLight,
+                    color: passColor,
                   ),
                 ),
               ],
@@ -92,7 +95,7 @@ class TestResultScreen extends StatelessWidget {
                     icon: Icons.close,
                     label: l10n.get('wrongCount'),
                     value: result.wrongCount.toString(),
-                    color: AppTheme.errorLight,
+                    color: failColor,
                   ),
                 ),
                 const SizedBox(width: 12),

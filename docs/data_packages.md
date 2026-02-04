@@ -45,7 +45,7 @@ my_question_bank.zip
 
 ### data.json Format
 
-The `data.json` file must follow this structure. It defines the hierarchy of Books -> Chapters -> Sections -> Questions.
+The `data.json` file must follow this structure. It defines the hierarchy of Books -> Chapters -> Sections -> Questions. It also supports **Reading Comprehension** via nested questions.
 
 ```json
 {
@@ -59,23 +59,37 @@ The `data.json` file must follow this structure. It defines the hierarchy of Boo
           "title": "Section 1.1: Introduction",
           "questions": [
             {
-              "content": "<p>What is the capital of France?</p>",
+              "content": "What is the capital of France?",
               "choices": [
                 {"key": "A", "html": "London"},
                 {"key": "B", "html": "Paris"},
                 {"key": "C", "html": "Berlin"}
               ],
               "answer": "B",
-              "explanation": "<p>Paris is the capital of France.</p>"
+              "explanation": "**Paris** is the capital of France."
             },
             {
-              "content": "<p>Identify this symbol:</p><img src=\"images/symbol_a.png\">",
-              "choices": [
-                {"key": "A", "html": "Stop"},
-                {"key": "B", "html": "Go"}
-              ],
-              "answer": "A",
-              "explanation": "<p>This is a stop sign.</p>"
+              "content": "Read the following passage and answer the questions:\n\n*The quick brown fox jumps over the lazy dog.*",
+              "questions": [
+                {
+                  "content": "Which animal is jumping?",
+                  "choices": [
+                    {"key": "A", "html": "Fox"},
+                    {"key": "B", "html": "Dog"}
+                  ],
+                  "answer": "A",
+                  "explanation": "The text states the fox jumps."
+                },
+                {
+                  "content": "Which animal is lazy?",
+                  "choices": [
+                    {"key": "A", "html": "Fox"},
+                    {"key": "B", "html": "Dog"}
+                  ],
+                  "answer": "B",
+                  "explanation": "The text states the dog is lazy."
+                }
+              ]
             }
           ]
         }
@@ -84,6 +98,13 @@ The `data.json` file must follow this structure. It defines the hierarchy of Boo
   ]
 }
 ```
+
+### Reading Comprehension Support
+
+Reading comprehension (passage-based questions) is handled automatically:
+1.  **Define the Passage**: Create a question object with the passage text in the `content` field. Do not provide `choices` or an `answer` if it's strictly a passage.
+2.  **Add Sub-questions**: Add a `questions` array inside the passage question object.
+3.  **App Behavior**: The app will filter out the passage itself from the navigation list. When a user views a sub-question, the passage content is automatically displayed in a dedicated card above the question.
 
 ### Field Reference
 
@@ -96,24 +117,25 @@ The `data.json` file must follow this structure. It defines the hierarchy of Boo
 | `chapters[].sections` | Yes | Array of section objects |
 | `sections[].title` | Yes | Section title |
 | `sections[].questions` | Yes | Array of question objects |
-| `questions[].content` | Yes | Question text (HTML supported) |
-| `questions[].choices` | Yes | Array of choice objects |
-| `questions[].answer` | Yes | Correct answer key (e.g., "A", "B") |
-| `questions[].explanation` | No | Explanation text (HTML supported) |
-| `choices[].key` | Yes | Choice identifier (e.g., "A", "B", "C", "D") |
-| `choices[].html` | Yes | Choice text (HTML supported) |
+| `questions[].content` | Yes | Question text or passage (Markdown & LaTeX supported) |
+| `questions[].choices` | No* | Array of choice objects. *Omit for passages.* |
+| `questions[].answer` | No* | Correct answer key. *Omit for passages.* |
+| `questions[].explanation` | No | Explanation text |
+| `questions[].questions` | No | Optional array of nested sub-questions |
+| `choices[].key` | Yes | Choice identifier (e.g., "A", "B") |
+| `choices[].html` | Yes | Choice text |
 
 ### Image Handling
 
 -   **Location:** Place all images in the `images/` folder within the zip.
--   **Reference:** In your JSON `content` or `explanation` fields, refer to images using relative paths: `src="images/filename.jpg"`.
+-   **Reference:** In your JSON `content` or `explanation` fields, refer to images using Markdown syntax: `![alt text](images/filename.jpg)`.
 -   **Rendering:** The app automatically detects these paths and resolves them to the locally unzipped files at runtime.
 
 ### Best Practices
 
 -   **Unique Filenames:** Use descriptive package filenames (e.g., `navigation_2024.zip`). The app appends a timestamp to avoid conflicts.
 -   **Image Size:** Keep images optimized (recommend < 500KB each) to reduce package size and loading time.
--   **HTML Support:** Question content supports basic HTML tags: `<p>`, `<b>`, `<i>`, `<img>`, `<br>`, `<ul>`, `<li>`, etc.
+-   **Markdown Support:** Question content supports standard Markdown and LaTeX: `**bold**`, `*italic*`, `![image](path)`, `$E=mc^2$`, `$$formula$$`, etc.
 -   **Testing:** Test your package with the sample structure before distributing.
 
 ### Creating a Package (Command Line)

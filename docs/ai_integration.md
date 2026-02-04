@@ -18,5 +18,5 @@ Users must provide their own API Key in the Settings screen to enable AI feature
 
 When a user taps the "AI Explain" button:
 1. The app builds a prompt containing the question stem, options, and the correct answer.
-2. This is sent to the configured AI API along with the system prompt.
-3. The response is rendered as Markdown in a bottom sheet, allowing the user to ask follow-up questions.
+2. This is sent to the configured AI API along with the system prompt, which instructs the AI to use Markdown and LaTeX for clarity.
+3. The response is rendered as native Markdown and LaTeX in a bottom sheet, allowing the user to ask follow-up questions.

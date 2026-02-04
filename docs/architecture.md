@@ -41,6 +41,7 @@ lib/
     ├── question_card.dart
     ├── section_selector.dart
     ├── ai_chat_panel.dart
+    ├── markdown_content.dart
     ├── stats_display.dart
     ├── test_history_list.dart
     └── widgets.dart       # Barrel export
@@ -50,15 +51,17 @@ lib/
 
 ### 1. Presentation Layer (UI)
 - **Screens**: Located in `lib/screens/`. Main entry point is `HomeScreen`.
-- **Widgets**: Reusable UI components in `lib/widgets/`. The `QuestionCard` is the primary widget for rendering exam questions.
+- **Widgets**: Reusable UI components in `lib/widgets/`. 
+    - `QuizQuestionDisplay`: The primary widget for rendering exam questions. It includes logic to display parent passages (for reading comprehension) above sub-questions.
+    - `MarkdownContent`: Handles Markdown and LaTeX rendering, including local image resolution.
 
 ### 2. State Management (Providers)
-- **QuizProvider**: Manages the current quiz state, including book selection, question filtering, navigation, and progress tracking.
+- **QuizProvider**: Manages the current quiz state. It filters the question list to exclude "passage-only" questions from navigation, while ensuring sub-questions maintain a link to their parent content.
 - **SettingsProvider**: Manages app-wide settings like theme mode, locale, and AI configuration.
 
 ### 3. Services (Data & Logic)
-- **DatabaseService**: Interfaces with the local SQLite database (`sqflite`). Creates schema on first run and handles data import.
-- **StorageService**: Manages persistent simple settings and user progress using `shared_preferences`.
+- **DatabaseService**: Interfaces with SQLite. Supports recursive question importing, allowing for reading comprehension passages to be stored as parent questions with linked sub-questions via `parent_id`.
+- **StorageService**: Manages persistent simple settings and user progress using modern `SharedPreferencesAsync`.
 - **PackageService**: Handles importing zip-based data packages, including extraction, validation, and built-in package loading from assets.
 - **AiService**: Manages communication with Gemini/Claude APIs for AI-powered question explanations.
 - **SoundService**: Pre-loads and plays sound effects (correct/wrong) with minimal latency.

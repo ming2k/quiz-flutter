@@ -23,6 +23,11 @@ class QuizProvider extends ChangeNotifier {
   String _currentPartitionId = 'all';
   String? _currentPackageImagePath;
 
+  // Chat
+  List<ChatMessage> _currentChatHistory = [];
+  List<ChatSession> _chatSessions = [];
+  int? _currentChatSessionId;
+
   // Progress
   UserProgress? _progress;
   final Map<int, UserAnswer> _userAnswers = {};
@@ -44,10 +49,9 @@ class QuizProvider extends ChangeNotifier {
   List<Book> get books => List.unmodifiable(_books);
   List<Section> get sections => List.unmodifiable(_sections);
   List<Question> get questions => List.unmodifiable(_filteredQuestions);
-  List<ChatMessage> get currentAiChatHistory {
-    if (_currentQuestion == null || _progress == null) return [];
-    return _progress!.aiChatHistoryByQuestionId[_currentQuestion!.id] ?? [];
-  }
+  List<ChatMessage> get currentAiChatHistory => List.unmodifiable(_currentChatHistory);
+  List<ChatSession> get chatSessions => List.unmodifiable(_chatSessions);
+  int? get currentChatSessionId => _currentChatSessionId;
   Book? get currentBook => _currentBook;
   Section? get currentSection => _currentSection;
   Question? get currentQuestion => _currentQuestion;
@@ -72,12 +76,17 @@ class QuizProvider extends ChangeNotifier {
     return _markedQuestions.contains(_currentQuestion!.id);
   }
 
+  bool isMarked(int questionId) {
+    return _markedQuestions.contains(questionId);
+  }
+
   int get correctCount =>
       _userAnswers.values.where((a) => a.isCorrect == true).length;
   int get wrongCount =>
       _userAnswers.values.where((a) => a.isCorrect == false).length;
   int get answeredCount => _userAnswers.length;
   int get unansweredCount => totalQuestions - answeredCount;
+  int get markedCount => _markedQuestions.length;
 
   double get accuracy {
     final answered = correctCount + wrongCount;
@@ -86,20 +95,87 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // AI Chat
-  Future<void> addAiChatMessage(ChatMessage message) async {
-    if (_currentQuestion == null || _progress == null) return;
-
-    final questionId = _currentQuestion!.id;
-    final history = _progress!.aiChatHistoryByQuestionId[questionId] ?? [];
-    history.add(message);
-
-    final newHistoryMap =
-        Map<int, List<ChatMessage>>.from(_progress!.aiChatHistoryByQuestionId);
-    newHistoryMap[questionId] = history;
-
-    _progress = _progress!.copyWith(aiChatHistoryByQuestionId: newHistoryMap);
-    await _saveProgress();
+  Future<void> _loadChatHistory() async {
+    if (_currentQuestion == null) {
+      _currentChatHistory = [];
+      _chatSessions = [];
+      _currentChatSessionId = null;
+      return;
+    }
+    
+    // Load sessions for this question
+    _chatSessions = await _db.getChatSessions(_currentQuestion!.id);
+    
+    if (_chatSessions.isNotEmpty) {
+      // If we don't have a current session selected, or the selected one isn't in the list
+      // (e.g. changed question), select the most recent one (first in list).
+      if (_currentChatSessionId == null || !_chatSessions.any((s) => s.id == _currentChatSessionId)) {
+        _currentChatSessionId = _chatSessions.first.id;
+      }
+      
+      if (_currentChatSessionId != null) {
+        _currentChatHistory = await _db.getChatHistory(_currentChatSessionId!);
+      }
+    } else {
+      _currentChatSessionId = null;
+      _currentChatHistory = [];
+    }
+    
     notifyListeners();
+  }
+  
+  Future<void> createChatSession([String title = 'New Chat']) async {
+    if (_currentQuestion == null) return;
+    
+    final session = await _db.createChatSession(_currentQuestion!.id, title);
+    _chatSessions.insert(0, session); // Add to top
+    _currentChatSessionId = session.id;
+    _currentChatHistory = [];
+    notifyListeners();
+  }
+  
+  Future<void> switchChatSession(int sessionId) async {
+    if (_currentChatSessionId == sessionId) return;
+    
+    _currentChatSessionId = sessionId;
+    _currentChatHistory = await _db.getChatHistory(sessionId);
+    notifyListeners();
+  }
+
+  Future<void> deleteChatSession(int sessionId) async {
+    await _db.deleteChatSession(sessionId);
+    _chatSessions.removeWhere((s) => s.id == sessionId);
+    
+    if (_currentChatSessionId == sessionId) {
+      if (_chatSessions.isNotEmpty) {
+        _currentChatSessionId = _chatSessions.first.id;
+        _currentChatHistory = await _db.getChatHistory(_currentChatSessionId!);
+      } else {
+        _currentChatSessionId = null;
+        _currentChatHistory = [];
+      }
+    }
+    notifyListeners();
+  }
+
+  Future<void> addAiChatMessage(ChatMessage message) async {
+    if (_currentQuestion == null) return;
+
+    // If no session exists, create one
+    if (_currentChatSessionId == null) {
+      // Use the message text as title, truncated
+      String title = message.text.replaceAll('\n', ' ').trim();
+      if (title.length > 30) title = '${title.substring(0, 30)}...';
+      if (title.isEmpty) title = 'Chat';
+      
+      await createChatSession(title);
+    }
+    
+    if (_currentChatSessionId != null) {
+      await _db.saveChatMessage(_currentChatSessionId!, message);
+      _currentChatHistory.add(message);
+      notifyListeners();
+    }
   }
 
   // Delete Book
@@ -189,7 +265,7 @@ class QuizProvider extends ChangeNotifier {
       _currentBook = book;
       _sections = await _db.getSections(book.id);
       _questions = await _db.getQuestions(book.id);
-      _filteredQuestions = List.from(_questions);
+      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
       _currentPartitionId = 'all';
 
       // Load package image path if applicable
@@ -199,20 +275,31 @@ class QuizProvider extends ChangeNotifier {
          _currentPackageImagePath = null;
       }
 
-      // Load saved progress
+      // Load saved progress (metadata like current index/mode)
       _progress = await _storage.loadProgress(book.filename);
+      
+      // Load answers and marks from SQLite
+      final dbAnswers = await _db.getUserAnswers(book.id);
+      final dbMarks = await _db.getMarkedQuestions(book.id);
+
+      _userAnswers.clear();
+      _markedQuestions.clear();
+
+      _userAnswers.addAll(dbAnswers);
+      _markedQuestions.addAll(dbMarks);
+
       if (_progress != null) {
         _restoreProgress();
       } else {
         _resetState();
-        // Create initial progress if none exists
         _progress = UserProgress(bankFilename: book.filename);
       }
       
       await _storage.saveLastOpenedBank(book.filename);
 
+      // _restoreProgress calls _applyPartitionFilter which populates _filteredQuestions
       if (_filteredQuestions.isNotEmpty) {
-        // Clamp index to a valid range
+        // Clamp index to a valid range of the FILTERED list
         if (_currentIndex >= _filteredQuestions.length) {
           _currentIndex = _filteredQuestions.length - 1;
         }
@@ -220,6 +307,7 @@ class QuizProvider extends ChangeNotifier {
           _currentIndex = 0;
         }
         _currentQuestion = _filteredQuestions[_currentIndex];
+        await _loadChatHistory();
       }
     } catch (e) {
       _error = 'Failed to load book: $e';
@@ -236,28 +324,15 @@ class QuizProvider extends ChangeNotifier {
     _currentPartitionId = _progress!.currentPartitionId;
     _currentIndex = _progress!.currentQuestionIndex;
 
-    // Restore user answers
-    _userAnswers.clear();
-    final partitionAnswers =
-        _progress!.userAnswersByPartition[_currentPartitionId] ?? [];
-    for (int i = 0; i < partitionAnswers.length && i < _filteredQuestions.length; i++) {
-      if (partitionAnswers[i].selected != null) {
-        _userAnswers[_filteredQuestions[i].id] = partitionAnswers[i];
-      }
-    }
-
-    // Restore marked questions
-    _markedQuestions.clear();
-    final markedIndices =
-        _progress!.markedQuestionsByPartition[_currentPartitionId] ?? [];
-    for (final idx in markedIndices) {
-      if (idx < _filteredQuestions.length) {
-        _markedQuestions.add(_filteredQuestions[idx].id);
-      }
-    }
-
-    // Apply partition filter
-    if (_currentPartitionId != 'all') {
+    // Apply filters based on mode
+    if (_appMode == AppMode.review) {
+      _filteredQuestions = _questions.where((q) {
+        final answer = _userAnswers[q.id];
+        final isReviewable = (answer != null && answer.isCorrect == false) ||
+            _markedQuestions.contains(q.id);
+        return isReviewable && (q.choices.isNotEmpty || q.answer.isNotEmpty);
+      }).toList();
+    } else if (_currentPartitionId != 'all') {
       _applyPartitionFilter();
     }
   }
@@ -272,18 +347,32 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // Partition (Section) Selection
-  Future<void> selectPartition(String partitionId) async {
+  Future<void> selectPartition(String partitionId, {int? index}) async {
     _currentPartitionId = partitionId;
-    _currentIndex = 0;
+    
+    if (index != null) {
+      _currentIndex = index;
+    } else {
+      // Try to restore index for this partition and current mode
+      int savedIndex = 0;
+      if (partitionId == 'all') {
+         savedIndex = _progress?.modePositions[_appMode] ?? 0;
+      } else {
+         savedIndex = _progress?.partitionModePositions[partitionId]?[_appMode] ?? 0;
+      }
+      _currentIndex = savedIndex;
+    }
 
     if (partitionId == 'all') {
-      _filteredQuestions = List.from(_questions);
+      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
     } else {
       _applyPartitionFilter();
     }
 
     if (_filteredQuestions.isNotEmpty) {
+      if (_currentIndex >= _filteredQuestions.length) _currentIndex = 0;
       _currentQuestion = _filteredQuestions[_currentIndex];
+      _loadChatHistory();
     }
 
     _debouncedSave();
@@ -291,30 +380,54 @@ class QuizProvider extends ChangeNotifier {
   }
 
   void _applyPartitionFilter() {
-    _filteredQuestions =
-        _questions.where((q) => q.sectionId == _currentPartitionId).toList();
+    _filteredQuestions = _questions
+        .where((q) =>
+            q.sectionId == _currentPartitionId &&
+            (q.choices.isNotEmpty || q.answer.isNotEmpty))
+        .toList();
   }
 
   // Mode Selection
-  void setMode(AppMode mode) {
+  void setMode(AppMode mode, {int? index}) {
     _appMode = mode;
 
     if (mode == AppMode.review) {
       // Filter to only wrong/marked questions
       _filteredQuestions = _questions.where((q) {
         final answer = _userAnswers[q.id];
-        return (answer != null && answer.isCorrect == false) ||
+        final isReviewable = (answer != null && answer.isCorrect == false) ||
             _markedQuestions.contains(q.id);
+        return isReviewable && (q.choices.isNotEmpty || q.answer.isNotEmpty);
       }).toList();
     } else if (_currentPartitionId == 'all') {
-      _filteredQuestions = List.from(_questions);
+      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
     } else {
       _applyPartitionFilter();
     }
 
-    _currentIndex = 0;
+    if (index != null) {
+      _currentIndex = index;
+    } else {
+       // Try to restore index for this mode and current partition
+       int savedIndex = 0;
+       if (_currentPartitionId == 'all') {
+         savedIndex = _progress?.modePositions[mode] ?? 0;
+       } else {
+         savedIndex = _progress?.partitionModePositions[_currentPartitionId]?[mode] ?? 0;
+       }
+       _currentIndex = savedIndex;
+    }
+
+    // Ensure index is within bounds (in case question list changed)
     if (_filteredQuestions.isNotEmpty) {
+      if (_currentIndex >= _filteredQuestions.length) {
+        _currentIndex = _filteredQuestions.length - 1;
+      }
+      if (_currentIndex < 0) {
+        _currentIndex = 0;
+      }
       _currentQuestion = _filteredQuestions[_currentIndex];
+      _loadChatHistory();
     }
 
     _debouncedSave();
@@ -326,6 +439,7 @@ class QuizProvider extends ChangeNotifier {
     if (index < 0 || index >= _filteredQuestions.length) return;
     _currentIndex = index;
     _currentQuestion = _filteredQuestions[_currentIndex];
+    _loadChatHistory();
     _debouncedSave();
     notifyListeners();
   }
@@ -343,51 +457,65 @@ class QuizProvider extends ChangeNotifier {
   }
 
   // Answer Question
-  void answerQuestion(String selected) {
-    if (_currentQuestion == null) return;
+  Future<void> answerQuestion(String selected) async {
+    if (_currentQuestion == null || _currentBook == null) return;
 
     final isCorrect =
         selected.toUpperCase() == _currentQuestion!.answer.toUpperCase();
 
-    _userAnswers[_currentQuestion!.id] = UserAnswer(
+    final answer = UserAnswer(
       selected: selected,
       isCorrect: isCorrect,
     );
+
+    _userAnswers[_currentQuestion!.id] = answer;
+    await _db.saveUserAnswer(_currentBook!.id, _currentQuestion!.id, answer);
 
     _debouncedSave();
     notifyListeners();
   }
 
   // Mark Question
-  void toggleMark() {
-    if (_currentQuestion == null) return;
+  Future<void> toggleMark([int? questionId]) async {
+    if (_currentBook == null) return;
 
-    if (_markedQuestions.contains(_currentQuestion!.id)) {
-      _markedQuestions.remove(_currentQuestion!.id);
+    final id = questionId ?? _currentQuestion?.id;
+    if (id == null) return;
+
+    final isMarked = !_markedQuestions.contains(id);
+    if (isMarked) {
+      _markedQuestions.add(id);
     } else {
-      _markedQuestions.add(_currentQuestion!.id);
+      _markedQuestions.remove(id);
     }
+
+    await _db.setUserMark(_currentBook!.id, id, isMarked);
 
     _debouncedSave();
     notifyListeners();
   }
 
   // Reset Current Question
-  void resetCurrentQuestion() {
+  Future<void> resetCurrentQuestion() async {
     if (_currentQuestion == null) return;
     _userAnswers.remove(_currentQuestion!.id);
+    await _db.deleteUserAnswer(_currentQuestion!.id);
     _debouncedSave();
     notifyListeners();
   }
 
   // Reset All Progress
   Future<void> resetAllProgress() async {
+    if (_currentBook == null) return;
     _userAnswers.clear();
     _markedQuestions.clear();
     _currentIndex = 0;
     if (_filteredQuestions.isNotEmpty) {
       _currentQuestion = _filteredQuestions[0];
+      await _loadChatHistory();
     }
+    
+    await _db.clearBookProgress(_currentBook!.id);
     await _saveProgress();
     notifyListeners();
   }
@@ -395,17 +523,25 @@ class QuizProvider extends ChangeNotifier {
   // Test Mode
   void startTest(int questionCount) {
     final random = Random();
-    final indices = List<int>.generate(_questions.length, (i) => i);
-    indices.shuffle(random);
+    final validIndices = <int>[];
+    for (int i = 0; i < _questions.length; i++) {
+      final q = _questions[i];
+      if (q.choices.isNotEmpty || q.answer.isNotEmpty) {
+        validIndices.add(i);
+      }
+    }
+    
+    validIndices.shuffle(random);
 
     _testQuestionIndices =
-        indices.take(min(questionCount, _questions.length)).toList();
+        validIndices.take(min(questionCount, validIndices.length)).toList();
     _filteredQuestions =
         _testQuestionIndices.map((i) => _questions[i]).toList();
 
     _currentIndex = 0;
     if (_filteredQuestions.isNotEmpty) {
       _currentQuestion = _filteredQuestions[0];
+      _loadChatHistory();
     }
 
     _userAnswers.clear();
@@ -445,13 +581,14 @@ class QuizProvider extends ChangeNotifier {
     // Restore normal mode
     _appMode = AppMode.practice;
     if (_currentPartitionId == 'all') {
-      _filteredQuestions = List.from(_questions);
+      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
     } else {
       _applyPartitionFilter();
     }
     _currentIndex = 0;
     if (_filteredQuestions.isNotEmpty) {
       _currentQuestion = _filteredQuestions[0];
+      _loadChatHistory();
     }
 
     notifyListeners();
@@ -475,45 +612,46 @@ class QuizProvider extends ChangeNotifier {
   Future<void> _saveProgress() async {
     if (_currentBook == null) return;
 
+    // Create or update the maps
+    final newModePositions =
+        Map<AppMode, int>.from(_progress?.modePositions ?? {});
+    final newPartitionModePositions =
+        Map<String, Map<AppMode, int>>.from(_progress?.partitionModePositions ?? {});
+
+    // Update current positions
+    if (_currentPartitionId == 'all') {
+      newModePositions[_appMode] = _currentIndex;
+    }
+
+    // Always update partition map for the current partition
+    if (!newPartitionModePositions.containsKey(_currentPartitionId)) {
+      newPartitionModePositions[_currentPartitionId] = {};
+    }
+    // We need to copy the inner map too if we are modifying it
+    newPartitionModePositions[_currentPartitionId] =
+        Map<AppMode, int>.from(newPartitionModePositions[_currentPartitionId]!);
+    newPartitionModePositions[_currentPartitionId]![_appMode] = _currentIndex;
+
     final progress = _progress?.copyWith(
           appMode: _appMode,
           currentQuestionIndex: _currentIndex,
           currentPartitionId: _currentPartitionId,
-          // The maps below are complex; handle them carefully
-          // This is a simplified example. A real app might need a
-          // more robust way to merge/update these maps.
+          modePositions: newModePositions,
+          partitionModePositions: newPartitionModePositions,
         ) ??
         UserProgress(
           bankFilename: _currentBook!.filename,
           appMode: _appMode,
           currentQuestionIndex: _currentIndex,
           currentPartitionId: _currentPartitionId,
+          modePositions: newModePositions,
+          partitionModePositions: newPartitionModePositions,
         );
 
-    // This is not ideal, we should be merging maps, not overwriting
-    // but for this example, we'll just save the current state.
-    final answersList = <UserAnswer>[];
-    for (int i = 0; i < _filteredQuestions.length; i++) {
-      final answer = _userAnswers[_filteredQuestions[i].id];
-      answersList.add(answer ?? UserAnswer());
-    }
-
-    final markedIndices = <int>[];
-    for (int i = 0; i < _filteredQuestions.length; i++) {
-      if (_markedQuestions.contains(_filteredQuestions[i].id)) {
-        markedIndices.add(i);
-      }
-    }
+    // No longer saving userAnswersByPartition or markedQuestionsByPartition here
+    // as they are handled by SQLite.
 
     final finalProgress = progress.copyWith(
-      userAnswersByPartition: {
-        ...progress.userAnswersByPartition,
-        _currentPartitionId: answersList,
-      },
-      markedQuestionsByPartition: {
-        ...progress.markedQuestionsByPartition,
-        _currentPartitionId: markedIndices,
-      },
       statsByPartition: {
         ...progress.statsByPartition,
         _currentPartitionId: PartitionStats(
