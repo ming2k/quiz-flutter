@@ -196,19 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           return ReorderableListView(
-            header: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildModeSelector(context, l10n, settings),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                  child: Text(
-                    l10n.selectQuestionBank,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              ],
-            ),
+            header: _buildModeSelector(context, l10n, settings),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             onReorder: (oldIndex, newIndex) {
               context.read<QuizProvider>().reorderBooks(oldIndex, newIndex);

@@ -59,6 +59,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/packages/
+    - assets/packages/sample-quiz.zip
 
 #  fonts:
 #    - family: NotoSansSC

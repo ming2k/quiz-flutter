@@ -5,15 +5,18 @@ class SoundService {
   factory SoundService() => _instance;
   SoundService._internal();
 
-  AudioPlayer? _correctPlayer;
   AudioPlayer? _wrongPlayer;
+  final List<AudioPlayer> _streakPlayers = [];
+  AudioPlayer? _acePlayer;
   bool _initialized = false;
 
-  /// Initialize and pre-load sounds for instant playback
+  int _currentStreak = 0;
+
+  int get currentStreak => _currentStreak;
+
   Future<void> init() async {
     if (_initialized) return;
 
-    // Configure audio context
     AudioPlayer.global.setAudioContext(AudioContext(
       android: AudioContextAndroid(
         isSpeakerphoneOn: true,
@@ -28,45 +31,73 @@ class SoundService {
       ),
     ));
 
-    // Create dedicated players for each sound
-    _correctPlayer = AudioPlayer();
     _wrongPlayer = AudioPlayer();
-
-    // Pre-load the audio sources
-    await Future.wait([
-      _correctPlayer!.setSource(AssetSource('sounds/correct.wav')),
-      _wrongPlayer!.setSource(AssetSource('sounds/wrong.wav')),
-    ]);
-
-    // Set players to stop at end so they can be replayed
-    _correctPlayer!.setReleaseMode(ReleaseMode.stop);
+    await _wrongPlayer!.setSource(AssetSource('sounds/wrong.wav'));
     _wrongPlayer!.setReleaseMode(ReleaseMode.stop);
+
+    // Load streak sounds (1-5)
+    for (int i = 1; i <= 5; i++) {
+      final player = AudioPlayer();
+      await player.setSource(AssetSource('sounds/streak_$i.mp3'));
+      player.setReleaseMode(ReleaseMode.stop);
+      _streakPlayers.add(player);
+    }
+
+    // Load ace sound (for 6+ streak)
+    _acePlayer = AudioPlayer();
+    await _acePlayer!.setSource(AssetSource('sounds/streak_ace.mp3'));
+    _acePlayer!.setReleaseMode(ReleaseMode.stop);
 
     _initialized = true;
   }
 
-  /// Play correct answer sound
+  /// Play correct answer sound based on current streak
   Future<void> playCorrect() async {
-    if (!_initialized || _correctPlayer == null) return;
-    await _correctPlayer!.stop();
-    await _correctPlayer!.seek(Duration.zero);
-    await _correctPlayer!.resume();
+    if (!_initialized) return;
+
+    _currentStreak++;
+
+    AudioPlayer? player;
+    if (_currentStreak >= 6) {
+      player = _acePlayer;
+    } else {
+      player = _streakPlayers[_currentStreak - 1];
+    }
+
+    if (player != null) {
+      await player.stop();
+      await player.seek(Duration.zero);
+      await player.resume();
+    }
   }
 
-  /// Play wrong answer sound
+  /// Play wrong answer sound and reset streak
   Future<void> playWrong() async {
     if (!_initialized || _wrongPlayer == null) return;
+
+    _currentStreak = 0;
+
     await _wrongPlayer!.stop();
     await _wrongPlayer!.seek(Duration.zero);
     await _wrongPlayer!.resume();
   }
 
-  /// Dispose resources
+  /// Reset streak without playing sound (e.g., when changing questions manually)
+  void resetStreak() {
+    _currentStreak = 0;
+  }
+
   Future<void> dispose() async {
-    await _correctPlayer?.dispose();
     await _wrongPlayer?.dispose();
-    _correctPlayer = null;
+    for (final player in _streakPlayers) {
+      await player.dispose();
+    }
+    await _acePlayer?.dispose();
+
     _wrongPlayer = null;
+    _streakPlayers.clear();
+    _acePlayer = null;
     _initialized = false;
+    _currentStreak = 0;
   }
 }

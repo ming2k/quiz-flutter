@@ -207,25 +207,18 @@ class QuizProvider extends ChangeNotifier {
     try {
       _books = await _db.getBooks();
 
-      // Import built-in packages on first run if no books exist
+      // Import built-in sample package on first run if no books exist
       if (_books.isEmpty) {
-        final builtInPackages = [
-          'assets/packages/maritime-english.zip',
-          'assets/packages/navigation.zip',
-          'assets/packages/ship-management.zip',
-          'assets/packages/ship-maneuvering-collision-avoidance.zip',
-          'assets/packages/ship-structure-cargo.zip',
-          'assets/packages/sample-quiz.zip',
-        ];
-
-        for (final package in builtInPackages) {
-          try {
-            await PackageService().importBuiltInPackage(package);
-          } catch (e) {
-            print('Failed to import built-in package $package: $e');
-          }
+        final result = await PackageService().importBuiltInPackage('assets/packages/sample-quiz.zip');
+        if (!result.success && result.errorMessage != null) {
+          _error = result.errorMessage;
         }
-        
+        _books = await _db.getBooks();
+      }
+
+      // Also ensure sample exists even if other books were imported
+      if (_books.isNotEmpty && !_books.any((b) => b.filename.contains('sample-quiz'))) {
+        await PackageService().importBuiltInPackage('assets/packages/sample-quiz.zip');
         _books = await _db.getBooks();
       }
     } catch (e) {

@@ -199,8 +199,8 @@ class PackageService {
               break;
             }
           }
-        } catch (e) {
-          print('Error flattening package: $e');
+        } catch (_) {
+          // Error flattening package, will try alternatives
         }
       }
 

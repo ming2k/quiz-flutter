@@ -419,7 +419,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
     try {
       final stream = _aiService.explain(
         questionStem: widget.question.content,
-        options: {for (var c in widget.question.choices) c.key: c.html},
+        options: {for (var c in widget.question.choices) c.key: c.content},
         correctAnswer: widget.question.answer,
         userQuestion: text,
       );

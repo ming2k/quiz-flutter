@@ -2,31 +2,31 @@ import 'dart:convert';
 
 class QuestionChoice {
   final String key;
-  final String html;
+  final String content;
 
-  QuestionChoice({required this.key, required this.html});
+  QuestionChoice({required this.key, required this.content});
 
   factory QuestionChoice.fromJson(Map<String, dynamic> json) {
-    // Standard format: {"key": "A", "html": "..."} or {"key": "A", "text": "..."}
-    if (json.containsKey('key') && (json.containsKey('html') || json.containsKey('content') || json.containsKey('text'))) {
+    // Standard format: {"key": "A", "content": "..."} or {"key": "A", "text": "..."}
+    if (json.containsKey('key') && (json.containsKey('content') || json.containsKey('html') || json.containsKey('text'))) {
       return QuestionChoice(
         key: json['key'] as String? ?? '',
-        html: (json['html'] ?? json['content'] ?? json['text']) as String? ?? '',
+        content: (json['content'] ?? json['html'] ?? json['text']) as String? ?? '',
       );
     }
-    
+
     // Alternative: If it's a single entry map like {"A": "Choice content"}
     if (json.length == 1) {
       final entry = json.entries.first;
       return QuestionChoice(
         key: entry.key,
-        html: entry.value.toString(),
+        content: entry.value.toString(),
       );
     }
 
     return QuestionChoice(
       key: json['key'] as String? ?? '',
-      html: json['html'] as String? ?? '',
+      content: json['content'] as String? ?? '',
     );
   }
 }
@@ -73,7 +73,7 @@ class Question {
               .toList();
         } else if (decoded is Map) {
           parsedChoices = decoded.entries
-              .map((e) => QuestionChoice(key: e.key.toString(), html: e.value.toString()))
+              .map((e) => QuestionChoice(key: e.key.toString(), content: e.value.toString()))
               .toList();
         }
       } catch (e) {
@@ -85,7 +85,7 @@ class Question {
           .toList();
     } else if (choicesData is Map) {
       parsedChoices = choicesData.entries
-          .map((e) => QuestionChoice(key: e.key.toString(), html: e.value.toString()))
+          .map((e) => QuestionChoice(key: e.key.toString(), content: e.value.toString()))
           .toList();
     }
     
@@ -105,11 +105,11 @@ class Question {
     );
   }
 
-  String getChoiceHtml(String key) {
+  String getChoiceContent(String key) {
     final choice = choices.where((c) => c.key == key).firstOrNull;
-    return choice?.html ?? '';
+    return choice?.content ?? '';
   }
 
   List<MapEntry<String, String>> get choiceEntries =>
-      choices.map((c) => MapEntry(c.key, c.html)).toList();
+      choices.map((c) => MapEntry(c.key, c.content)).toList();
 }

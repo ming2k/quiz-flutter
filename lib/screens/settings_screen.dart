@@ -56,6 +56,12 @@ class SettingsScreen extends StatelessWidget {
                 value: settings.confettiEffect,
                 onChanged: (value) => settings.setConfettiEffect(value),
               ),
+              ListTile(
+                title: Text(l10n.get('testQuestionCount')),
+                subtitle: Text('${settings.testQuestionCount} ${l10n.get('questions')}'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showTestQuestionCountDialog(context, settings, l10n),
+              ),
               const Divider(),
 
               // AI Settings Section
@@ -298,6 +304,30 @@ class SettingsScreen extends StatelessWidget {
                 groupValue: settings.aiModel,
                 onChanged: (value) {
                   settings.setAiModel(value!);
+                  Navigator.pop(context);
+                },
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  void _showTestQuestionCountDialog(BuildContext context, SettingsProvider settings, AppLocalizations l10n) {
+    final counts = [10, 20, 30, 50, 100];
+
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.get('testQuestionCount')),
+        children: counts
+            .map(
+              (count) => RadioListTile<int>(
+                title: Text('$count'),
+                value: count,
+                groupValue: settings.testQuestionCount,
+                onChanged: (value) {
+                  settings.setTestQuestionCount(value!);
                   Navigator.pop(context);
                 },
               ),
