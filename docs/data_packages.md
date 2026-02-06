@@ -4,7 +4,7 @@ The application supports a "pluginable" architecture, allowing users to import c
 
 ## Built-in Sample Package
 
-On first launch, if no question banks exist, the app automatically imports a built-in sample package from `assets/packages/sample-quiz.zip`. This provides 7 example questions for immediate testing.
+On first launch, if no question banks exist, the app automatically imports a built-in sample package from `assets/packages/sample-quiz.zip`. This provides 10 example questions for immediate testing.
 
 ## For Users: How to Import
 

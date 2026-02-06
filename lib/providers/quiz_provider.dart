@@ -338,18 +338,16 @@ class QuizProvider extends ChangeNotifier {
     try {
       _books = await _db.getBooks();
 
-      // Import built-in sample package on first run if no books exist
-      if (_books.isEmpty) {
+      final bool isSampleInitialized = await _storage.loadSetting<bool>('is_sample_quiz_initialized', defaultValue: false) ?? false;
+
+      // Import built-in sample package on first run if no books exist and not yet initialized
+      if (_books.isEmpty && !isSampleInitialized) {
         final result = await PackageService().importBuiltInPackage('assets/packages/sample-quiz.zip');
         if (!result.success && result.errorMessage != null) {
           _error = result.errorMessage;
+        } else {
+          await _storage.saveSetting('is_sample_quiz_initialized', true);
         }
-        _books = await _db.getBooks();
-      }
-
-      // Also ensure sample exists even if other books were imported
-      if (_books.isNotEmpty && !_books.any((b) => b.filename.contains('sample-quiz'))) {
-        await PackageService().importBuiltInPackage('assets/packages/sample-quiz.zip');
         _books = await _db.getBooks();
       }
     } catch (e) {

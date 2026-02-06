@@ -21,7 +21,7 @@ Welcome to the documentation for **Quiz App**, a general extensible quiz framewo
 3. Run `flutter run`.
 
 ### Built-in Sample Package
-On first launch, if no question banks exist, the app automatically imports a built-in sample quiz package (`assets/packages/sample-quiz.zip`) with 7 example questions for testing.
+On first launch, if no question banks exist, the app automatically imports a built-in sample quiz package (`assets/packages/sample-quiz.zip`) with 10 example questions for testing.
 
 ## Features
 
