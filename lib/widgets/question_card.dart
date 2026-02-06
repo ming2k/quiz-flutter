@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../theme/app_theme.dart';
 import 'quiz_question_display.dart';
+import 'dopamine_click_wrapper.dart';
 
 class QuestionCard extends StatelessWidget {
   final Question question;
@@ -47,7 +48,7 @@ class QuestionCard extends StatelessWidget {
         // Header Row (Order, AI, Mark, Reset)
         Padding(
           key: const Key('question_card_header_padding'),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             key: const Key('question_card_header_row'),
             children: [
@@ -64,27 +65,36 @@ class QuestionCard extends StatelessWidget {
               ),
               const Spacer(key: Key('question_card_header_spacer')),
               if (onAiExplain != null)
-                IconButton(
-                  key: const Key('question_ai_button'),
-                  icon: const Icon(Icons.auto_awesome),
-                  onPressed: onAiExplain,
-                  tooltip: 'AI Explain',
+                DopamineClickWrapper(
+                  key: const Key('question_ai_wrapper'),
+                  child: IconButton(
+                    key: const Key('question_ai_button'),
+                    icon: const Icon(Icons.auto_awesome),
+                    onPressed: onAiExplain,
+                    tooltip: 'AI Explain',
+                  ),
                 ),
               if (onMarkToggle != null)
-                IconButton(
-                  key: const Key('question_mark_button'),
-                  icon: Icon(
-                    isMarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: isMarked ? AppTheme.warning : null,
+                DopamineClickWrapper(
+                  key: const Key('question_mark_wrapper'),
+                  child: IconButton(
+                    key: const Key('question_mark_button'),
+                    icon: Icon(
+                      isMarked ? Icons.bookmark : Icons.bookmark_border,
+                      color: isMarked ? AppTheme.warning : null,
+                    ),
+                    onPressed: onMarkToggle,
+                    tooltip: isMarked ? 'Unmark' : 'Mark',
                   ),
-                  onPressed: onMarkToggle,
-                  tooltip: isMarked ? 'Unmark' : 'Mark',
                 ),
-              IconButton(
-                key: const Key('question_reset_button'),
-                icon: const Icon(Icons.refresh),
-                onPressed: onReset,
-                tooltip: 'Reset',
+              DopamineClickWrapper(
+                key: const Key('question_reset_wrapper'),
+                child: IconButton(
+                  key: const Key('question_reset_button'),
+                  icon: const Icon(Icons.refresh),
+                  onPressed: onReset,
+                  tooltip: 'Reset',
+                ),
               ),
             ],
           ),

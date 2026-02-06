@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import 'markdown_content.dart';
+import 'dopamine_click_wrapper.dart';
 
 class QuizQuestionDisplay extends StatelessWidget {
   final Question question;
@@ -110,64 +111,75 @@ class QuizQuestionDisplay extends StatelessWidget {
       labelTextColor = Colors.white;
     }
 
-    return GestureDetector(
-      key: Key('option_gesture_${entry.key}'),
-      onTap: () {
-        if (!showAnswer && onOptionSelected != null) {
-          onOptionSelected!(entry.key);
-        }
-      },
-      child: Container(
-        key: Key('option_container_${entry.key}'),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DopamineClickWrapper(
+        key: Key('option_wrapper_${entry.key}'),
+        isCorrect: showAnswer && isCorrect,
+        child: Material(
+          key: Key('option_material_${entry.key}'),
           color: cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: isSelected || (showAnswer && isCorrect) 
-              ? Border.all(color: labelColor, width: 1)
-              : Border.all(color: textColor.withValues(alpha: 0.12), width: 1),
-        ),
-        child: Row(
-          key: Key('option_row_${entry.key}'),
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              key: Key('option_label_container_${entry.key}'),
-              width: 32,
-              height: 32,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            key: Key('option_inkwell_${entry.key}'),
+            onTap: () {
+              if (!showAnswer && onOptionSelected != null) {
+                onOptionSelected!(entry.key);
+              }
+            },
+            child: Container(
+              key: Key('option_container_${entry.key}'),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: labelColor,
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected || (showAnswer && isCorrect) 
+                    ? Border.all(color: labelColor, width: 1)
+                    : Border.all(color: textColor.withValues(alpha: 0.12), width: 1),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                entry.key,
-                key: Key('option_label_text_${entry.key}'),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: labelTextColor,
-                  fontSize: 14,
-                ),
+              child: Row(
+                key: Key('option_row_${entry.key}'),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    key: Key('option_label_container_${entry.key}'),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: labelColor,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      entry.key,
+                      key: Key('option_label_text_${entry.key}'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: labelTextColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 14, key: Key('option_spacer_${entry.key}')),
+                  Expanded(
+                    key: Key('option_content_expanded_${entry.key}'),
+                    child: Padding(
+                      key: Key('option_content_padding_${entry.key}'),
+                      padding: const EdgeInsets.only(top: 4),
+                      child: MarkdownContent(
+                        key: Key('option_content_markdown_${entry.key}'),
+                        content: entry.value,
+                        imageBasePath: imageBasePath,
+                        fontSize: 16,
+                        textColor: textColor,
+                        selectable: false,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(width: 14, key: Key('option_spacer_${entry.key}')),
-            Expanded(
-              key: Key('option_content_expanded_${entry.key}'),
-              child: Padding(
-                key: Key('option_content_padding_${entry.key}'),
-                padding: const EdgeInsets.only(top: 4),
-                child: MarkdownContent(
-                  key: Key('option_content_markdown_${entry.key}'),
-                  content: entry.value,
-                  imageBasePath: imageBasePath,
-                  fontSize: 16,
-                  textColor: textColor,
-                  selectable: false,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

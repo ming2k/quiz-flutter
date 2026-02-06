@@ -32,7 +32,7 @@ class SoundService {
     ));
 
     _wrongPlayer = AudioPlayer();
-    await _wrongPlayer!.setSource(AssetSource('sounds/wrong.wav'));
+    await _wrongPlayer!.setSource(AssetSource('sounds/wrong.mp3'));
     _wrongPlayer!.setReleaseMode(ReleaseMode.stop);
 
     // Load streak sounds (1-5)

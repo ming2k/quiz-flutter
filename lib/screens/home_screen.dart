@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../l10n/app_localizations.dart';
+import '../widgets/dopamine_click_wrapper.dart';
 import 'quiz_screen.dart';
 import 'settings_screen.dart';
 
@@ -229,25 +230,28 @@ class _HomeScreenState extends State<HomeScreen> {
               ? Theme.of(context).colorScheme.primary
               : Theme.of(context).colorScheme.onSurfaceVariant;
 
-          return IconButton(
-            icon: Icon(mode.$3),
-            iconSize: 32,
-            color: color,
-            tooltip: mode.$2,
-            onPressed: () {
-              if (settings.lastAppMode != mode.$1) {
-                settings.setLastAppMode(mode.$1);
-                
-                ScaffoldMessenger.of(context).clearSnackBars();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(mode.$2),
-                    duration: const Duration(seconds: 1),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
+          return DopamineClickWrapper(
+            key: Key('mode_wrapper_${mode.$1}'),
+            child: IconButton(
+              icon: Icon(mode.$3),
+              iconSize: 32,
+              color: color,
+              tooltip: mode.$2,
+              onPressed: () {
+                if (settings.lastAppMode != mode.$1) {
+                  settings.setLastAppMode(mode.$1);
+                  
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(mode.$2),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+            ),
           );
         }).toList(),
       ),
@@ -293,51 +297,54 @@ class _HomeScreenState extends State<HomeScreen> {
       onDismissed: (direction) {
         context.read<QuizProvider>().deleteBook(book.id);
       },
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          onTap: () => _startPractice(book),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+      child: DopamineClickWrapper(
+        key: ValueKey('book_wrapper_${book.id}'),
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            onTap: () => _startPractice(book),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.book,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.book,
-                    color: Theme.of(context).colorScheme.primary,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          book.getDisplayName(locale),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${book.totalQuestions} ${l10n.get('questions')}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.getDisplayName(locale),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${book.totalQuestions} ${l10n.get('questions')}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
+                  const Icon(Icons.chevron_right, color: Colors.grey),
+                ],
+              ),
             ),
           ),
         ),

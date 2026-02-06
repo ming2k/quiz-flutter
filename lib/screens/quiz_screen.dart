@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:confetti/confetti.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
 import '../l10n/app_localizations.dart';
-import '../widgets/question_card.dart';
-import '../widgets/section_selector.dart';
-import '../widgets/ai_chat_panel.dart';
-import '../widgets/test_history_list.dart';
-import '../widgets/overview_sheet.dart';
+import '../widgets/widgets.dart';
+import '../widgets/dopamine_click_wrapper.dart';
 import 'test_result_screen.dart';
 import 'settings_screen.dart';
 
@@ -22,7 +18,6 @@ class QuizScreen extends StatefulWidget {
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  late ConfettiController _confettiController;
   late PageController _pageController;
   final SoundService _soundService = SoundService();
   final HapticService _hapticService = HapticService();
@@ -33,11 +28,15 @@ class _QuizScreenState extends State<QuizScreen> {
   // Track if we are currently animating the page
   bool _isAnimatingPage = false;
 
+  // Track target progress for immediate progress bar animation
+  double? _targetProgress;
+
+  // Trigger for success visual effect
+  bool _successTrigger = false;
+
   @override
   void initState() {
     super.initState();
-    _confettiController =
-        ConfettiController(duration: const Duration(seconds: 2));
     _soundService.init();
     _hapticService.init();
     
@@ -47,7 +46,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   void dispose() {
-    _confettiController.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -68,94 +66,100 @@ class _QuizScreenState extends State<QuizScreen> {
 
     return Scaffold(
       key: const Key('quiz_scaffold'),
-      appBar: _buildAppBar(context, l10n),
-      body: Stack(
-        key: const Key('quiz_body_stack'),
-        children: [
-          Column(
-            key: const Key('quiz_main_column'),
-            children: [
-              // Question PageView
-              Expanded(
-                key: const Key('quiz_question_expanded'),
-                child: PageView.builder(
-                  key: const Key('quiz_question_pageview'),
-                  controller: _pageController,
-                  itemCount: quiz.totalQuestions,
-                  // Disable user swiping to prevent conflict with vertical scrolling
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (index) {
-                    if (!_isAnimatingPage) {
-                      quiz.goToQuestion(index);
-                      setState(() {
-                        _selectedOption = null;
-                      });
-                    }
-                  },
-                  itemBuilder: (context, index) {
-                    if (index >= quiz.totalQuestions) return const SizedBox.shrink();
-                    
-                    final question = quiz.questions[index];
-                    
-                    // Note: Adjacent pages might not have perfect answer state until they become current
-                    // due to QuizProvider architecture, but pre-rendering the WebView content
-                    // is the priority for performance.
-                    final isCurrent = index == quiz.currentIndex;
-                    final answer = isCurrent ? quiz.currentUserAnswer : null; 
-                    
-                    return QuestionCard(
-                      key: Key('question_card_$index'),
-                      question: question,
-                      questionIndex: index,
-                      totalQuestions: quiz.totalQuestions,
-                      selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
-                      showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
-                      isCorrect: isCurrent ? answer?.isCorrect : null,
-                      isMarked: quiz.isMarked(question.id),
-                      showAnalysis: settings.showAnalysis,
-                      imageBasePath: quiz.currentPackageImagePath,
-                      onAiExplain: () => _showAiPanel(question),
-                      onOptionSelected: (isCurrent && answer != null)
-                          ? null
-                          : (option) => _handleAnswer(option, index),
-                      onMarkToggle: () => quiz.toggleMark(question.id),
-                      onReset: (isCurrent && answer != null)
-                          ? () {
-                              quiz.resetCurrentQuestion();
-                              setState(() {
-                                _selectedOption = null;
-                              });
-                            }
-                          : null,
-                    );
-                  },
+      appBar: PreferredSize(
+        key: const Key('quiz_app_bar_preferred_size'),
+        preferredSize: const Size.fromHeight(48),
+        child: _buildAppBar(context, l10n),
+      ),
+      body: SuccessFeedback(
+        key: const Key('quiz_success_feedback'),
+        trigger: _successTrigger,
+        child: Stack(
+          key: const Key('quiz_body_stack'),
+          children: [
+            Column(
+              key: const Key('quiz_main_column'),
+              children: [
+                // Progress Bar (Static relative to PageView transitions)
+                Padding(
+                  key: const Key('quiz_progress_bar_padding'),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Consumer<QuizProvider>(
+                    key: const Key('quiz_progress_consumer'),
+                    builder: (context, quiz, _) {
+                      final progress = _targetProgress ?? 
+                          (quiz.totalQuestions > 0 ? (quiz.currentIndex + 1) / quiz.totalQuestions : 0.0);
+                      return DopamineProgressBar(
+                        key: const Key('quiz_dopamine_progress_bar'),
+                        progress: progress,
+                      );
+                    },
+                  ),
                 ),
-              ),
 
-              // Navigation Bar
-              _buildNavigationBar(l10n),
-            ],
-          ),
+                // Question PageView
+                Expanded(
+                  key: const Key('quiz_question_expanded'),
+                  child: PageView.builder(
+                    key: const Key('quiz_question_pageview'),
+                    controller: _pageController,
+                    itemCount: quiz.totalQuestions,
+                    // Disable user swiping to prevent conflict with vertical scrolling
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) {
+                      if (!_isAnimatingPage) {
+                        quiz.goToQuestion(index);
+                        setState(() {
+                          _selectedOption = null;
+                        });
+                      }
+                    },
+                    itemBuilder: (context, index) {
+                      if (index >= quiz.totalQuestions) return const SizedBox.shrink();
+                      
+                      final question = quiz.questions[index];
+                      
+                      // Note: Adjacent pages might not have perfect answer state until they become current
+                      // due to QuizProvider architecture, but pre-rendering the WebView content
+                      // is the priority for performance.
+                      final isCurrent = index == quiz.currentIndex;
+                      final answer = isCurrent ? quiz.currentUserAnswer : null; 
+                      
+                      return QuestionCard(
+                        key: Key('question_card_$index'),
+                        question: question,
+                        questionIndex: index,
+                        totalQuestions: quiz.totalQuestions,
+                        selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
+                        showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
+                        isCorrect: isCurrent ? answer?.isCorrect : null,
+                        isMarked: quiz.isMarked(question.id),
+                        showAnalysis: settings.showAnalysis,
+                        imageBasePath: quiz.currentPackageImagePath,
+                        onAiExplain: () => _showAiPanel(question),
+                        onOptionSelected: (isCurrent && answer != null)
+                            ? null
+                            : (option) => _handleAnswer(option, index),
+                        onMarkToggle: () => quiz.toggleMark(question.id),
+                        onReset: (isCurrent && answer != null)
+                            ? () {
+                                quiz.resetCurrentQuestion();
+                                setState(() {
+                                  _selectedOption = null;
+                                });
+                              }
+                            : null,
+                      );
+                    },
+                  ),
+                ),
 
-          // Confetti
-          Align(
-            key: const Key('quiz_confetti_align'),
-            alignment: Alignment.topCenter,
-            child: ConfettiWidget(
-              key: const Key('quiz_confetti_widget'),
-              confettiController: _confettiController,
-              blastDirectionality: BlastDirectionality.explosive,
-              shouldLoop: false,
-              colors: const [
-                Colors.green,
-                Colors.blue,
-                Colors.pink,
-                Colors.orange,
-                Colors.purple,
+                // Navigation Bar
+                _buildNavigationBar(l10n),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -163,53 +167,66 @@ class _QuizScreenState extends State<QuizScreen> {
   AppBar _buildAppBar(BuildContext context, AppLocalizations l10n) {
     final quiz = context.read<QuizProvider>();
     return AppBar(
+      key: const Key('quiz_app_bar'),
       title: Selector<QuizProvider, String>(
+        key: const Key('quiz_title_selector'),
         selector: (_, provider) =>
             provider.currentBook?.getDisplayName(l10n.locale.languageCode) ?? '',
-        builder: (_, title, __) => Text(title),
+        builder: (_, title, __) => Text(title, key: const Key('quiz_title_text')),
       ),
-      leading: IconButton(
-        key: const Key('quiz_back_button'),
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => _handleBack(),
+      leading: DopamineClickWrapper(
+        key: const Key('quiz_back_wrapper'),
+        child: IconButton(
+          key: const Key('quiz_back_button'),
+          icon: const Icon(Icons.arrow_back, key: Key('quiz_back_icon')),
+          onPressed: () => _handleBack(),
+        ),
       ),
       actions: [
         // Section selector
         Selector<QuizProvider, bool>(
+          key: const Key('quiz_section_selector'),
           selector: (_, provider) => provider.isTestActive,
           builder: (context, isTestActive, _) {
-            if (isTestActive) return const SizedBox.shrink();
-            return IconButton(
-              key: const Key('quiz_section_button'),
-              icon: const Icon(Icons.list_alt),
-              tooltip: l10n.get('section'),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => SectionSelector(
-                    sections: quiz.sections,
-                    currentPartitionId: quiz.currentPartitionId,
-                    onSectionSelected: quiz.selectPartition,
-                  ),
-                );
-              },
+            if (isTestActive) return const SizedBox.shrink(key: Key('quiz_section_empty'));
+            return DopamineClickWrapper(
+              key: const Key('quiz_section_wrapper'),
+              child: IconButton(
+                key: const Key('quiz_section_button'),
+                icon: const Icon(Icons.list_alt, key: Key('quiz_section_icon')),
+                tooltip: l10n.get('section'),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => SectionSelector(
+                      key: const Key('quiz_section_sheet'),
+                      sections: quiz.sections,
+                      currentPartitionId: quiz.currentPartitionId,
+                      onSectionSelected: quiz.selectPartition,
+                    ),
+                  );
+                },
+              ),
             );
           },
         ),
         // Overview
-        IconButton(
-          key: const Key('quiz_overview_button'),
-          icon: const Icon(Icons.grid_view),
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const OverviewSheet(),
-            );
-          },
+        DopamineClickWrapper(
+          key: const Key('quiz_overview_wrapper'),
+          child: IconButton(
+            key: const Key('quiz_overview_button'),
+            icon: const Icon(Icons.grid_view, key: Key('quiz_overview_icon')),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const OverviewSheet(key: Key('quiz_overview_sheet')),
+              );
+            },
+          ),
         ),
         // Menu
         PopupMenuButton<String>(
@@ -218,12 +235,12 @@ class _QuizScreenState extends State<QuizScreen> {
             if (value == 'history') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const TestHistoryList()),
+                MaterialPageRoute(builder: (_) => const TestHistoryList(key: Key('quiz_history_page'))),
               );
             } else if (value == 'settings') {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                MaterialPageRoute(builder: (_) => const SettingsScreen(key: Key('quiz_settings_page'))),
               );
             } else if (value == 'reset') {
               _showResetDialog();
@@ -297,36 +314,45 @@ class _QuizScreenState extends State<QuizScreen> {
             children: [
               Expanded(
                 key: const Key('quiz_prev_button_expanded'),
-                child: ElevatedButton.icon(
-                  key: const Key('quiz_prev_button'),
-                  onPressed:
-                      quiz.currentIndex > 0 ? () => _animateToPage(quiz.currentIndex - 1) : null,
-                  icon: const Icon(Icons.arrow_back),
-                  label: Text(l10n.get('previous')),
+                child: DopamineClickWrapper(
+                  key: const Key('quiz_prev_wrapper'),
+                  child: ElevatedButton.icon(
+                    key: const Key('quiz_prev_button'),
+                    onPressed:
+                        quiz.currentIndex > 0 ? () => _animateToPage(quiz.currentIndex - 1) : null,
+                    icon: const Icon(Icons.arrow_back, key: Key('quiz_prev_icon')),
+                    label: Text(l10n.get('previous'), key: const Key('quiz_prev_text')),
+                  ),
                 ),
               ),
               const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_1')),
               if (quiz.isTestActive) ...[
-                ElevatedButton(
-                  key: const Key('quiz_finish_button'),
-                  onPressed: () => _finishTest(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
+                DopamineClickWrapper(
+                  key: const Key('quiz_finish_wrapper'),
+                  child: ElevatedButton(
+                    key: const Key('quiz_finish_button'),
+                    onPressed: () => _finishTest(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(l10n.get('finishTest'), key: const Key('quiz_finish_text')),
                   ),
-                  child: Text(l10n.get('finishTest')),
                 ),
                 const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_test')),
               ],
               Expanded(
                 key: const Key('quiz_next_button_expanded'),
-                child: ElevatedButton.icon(
-                  key: const Key('quiz_next_button'),
-                  onPressed: quiz.currentIndex < quiz.totalQuestions - 1
-                      ? () => _animateToPage(quiz.currentIndex + 1)
-                      : null,
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text(l10n.get('next')),
+                child: DopamineClickWrapper(
+                  key: const Key('quiz_next_wrapper'),
+                  child: ElevatedButton.icon(
+                    key: const Key('quiz_next_button'),
+                    onPressed: quiz.currentIndex < quiz.totalQuestions - 1
+                        ? () => _animateToPage(quiz.currentIndex + 1)
+                        : null,
+                    icon: const Icon(Icons.arrow_forward, key: Key('quiz_next_icon')),
+                    label: Text(l10n.get('next'), key: const Key('quiz_next_text')),
+                  ),
                 ),
               ),
             ],
@@ -338,13 +364,19 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _animateToPage(int page) {
     if (_pageController.hasClients) {
-      _isAnimatingPage = true;
+      final quiz = context.read<QuizProvider>();
+      setState(() {
+        _isAnimatingPage = true;
+        _targetProgress = (page + 1) / quiz.totalQuestions;
+      });
+
       _pageController.animateToPage(
         page,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       ).then((_) {
         _isAnimatingPage = false;
+        _targetProgress = null;
         // Ensure the provider is updated after animation if not already
         if (mounted) {
            // Reset transient selection state for the new page
@@ -367,6 +399,7 @@ class _QuizScreenState extends State<QuizScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AiChatPanel(
+        key: const Key('quiz_ai_panel'),
         question: question,
       ),
     );
@@ -411,9 +444,19 @@ class _QuizScreenState extends State<QuizScreen> {
       }
     }
 
-    // Confetti for correct answers
+    // Success feedback (Screen pulse)
     if (isCorrect && settings.confettiEffect) {
-      _confettiController.play();
+      setState(() {
+        _successTrigger = true;
+      });
+      // Reset trigger shortly after
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          setState(() {
+            _successTrigger = false;
+          });
+        }
+      });
     }
 
     // Auto advance
@@ -445,19 +488,22 @@ class _QuizScreenState extends State<QuizScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(l10n.get('finishTest')),
-        content: const Text('确定要结束考试吗？'),
+        key: const Key('exit_test_dialog'),
+        title: Text(l10n.get('finishTest'), key: const Key('exit_test_title')),
+        content: const Text('确定要结束考试吗？', key: Key('exit_test_content')),
         actions: [
           TextButton(
+            key: const Key('exit_test_cancel'),
             onPressed: () => Navigator.pop(context),
-            child: Text(l10n.get('cancel')),
+            child: Text(l10n.get('cancel'), key: const Key('exit_test_cancel_text')),
           ),
           ElevatedButton(
+            key: const Key('exit_test_confirm'),
             onPressed: () {
               Navigator.pop(context);
               _finishTest();
             },
-            child: Text(l10n.get('confirm')),
+            child: Text(l10n.get('confirm'), key: const Key('exit_test_confirm_text')),
           ),
         ],
       ),
@@ -469,14 +515,17 @@ class _QuizScreenState extends State<QuizScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('重置进度'),
-        content: const Text('确定要重置当前题库的所有进度吗？此操作不可撤销。'),
+        key: const Key('reset_progress_dialog'),
+        title: const Text('重置进度', key: Key('reset_progress_title')),
+        content: const Text('确定要重置当前题库的所有进度吗？此操作不可撤销。', key: Key('reset_progress_content')),
         actions: [
           TextButton(
+            key: const Key('reset_progress_cancel'),
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: const Text('取消', key: Key('reset_progress_cancel_text')),
           ),
           ElevatedButton(
+            key: const Key('reset_progress_confirm'),
             onPressed: () {
               quiz.resetAllProgress();
               _soundService.resetStreak();
@@ -486,7 +535,7 @@ class _QuizScreenState extends State<QuizScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('重置'),
+            child: const Text('重置', key: Key('reset_progress_confirm_text')),
           ),
         ],
       ),
@@ -500,7 +549,7 @@ class _QuizScreenState extends State<QuizScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => TestResultScreen(result: result),
+          builder: (_) => TestResultScreen(key: const Key('test_result_page'), result: result),
         ),
       );
     }

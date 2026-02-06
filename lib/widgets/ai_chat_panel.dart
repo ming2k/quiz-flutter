@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
+import '../utils/toast_utils.dart';
 import 'markdown_content.dart';
 
 class AiChatPanel extends StatefulWidget {
@@ -175,7 +176,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
           Container(
             key: const Key('ai_chat_input_outer_container'),
             color: Theme.of(context).colorScheme.surface,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: SafeArea(
               key: const Key('ai_chat_input_safe_area'),
               top: false,
@@ -494,9 +495,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
       await quiz.startAiChat(text);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
-        );
+        ToastUtils.showToast(context, e.toString().replaceAll("Exception: ", ""));
       }
     }
   }

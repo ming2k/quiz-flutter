@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/dopamine_click_wrapper.dart';
 
 class TestResultScreen extends StatelessWidget {
   final TestHistoryEntry result;
@@ -151,14 +152,18 @@ class TestResultScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             // Actions
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
+            DopamineClickWrapper(
+              key: const Key('result_home_wrapper'),
+              child: ElevatedButton(
+                key: const Key('result_home_button'),
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                child: Text(l10n.get('backToHome')),
               ),
-              child: Text(l10n.get('backToHome')),
             ),
           ],
         ),

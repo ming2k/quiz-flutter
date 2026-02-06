@@ -6,3 +6,5 @@ export 'test_history_list.dart';
 export 'markdown_content.dart';
 export 'quiz_question_display.dart';
 export 'overview_sheet.dart';
+export 'dopamine_progress_bar.dart';
+export 'success_feedback.dart';
