@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
@@ -54,7 +53,6 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final quiz = context.watch<QuizProvider>();
-    final settings = context.watch<SettingsProvider>();
 
     // Sync PageController with QuizProvider index if changed externally (e.g. Overview)
     if (_pageController.hasClients && !_isAnimatingPage) {
@@ -68,7 +66,7 @@ class _QuizScreenState extends State<QuizScreen> {
       key: const Key('quiz_scaffold'),
       appBar: PreferredSize(
         key: const Key('quiz_app_bar_preferred_size'),
-        preferredSize: const Size.fromHeight(48),
+        preferredSize: const Size.fromHeight(56),
         child: _buildAppBar(context, l10n),
       ),
       body: SuccessFeedback(
@@ -80,7 +78,7 @@ class _QuizScreenState extends State<QuizScreen> {
             Column(
               key: const Key('quiz_main_column'),
               children: [
-                // Progress Bar (Static relative to PageView transitions)
+                // Progress Bar
                 Padding(
                   key: const Key('quiz_progress_bar_padding'),
                   padding: const EdgeInsets.symmetric(vertical: 2),
@@ -97,65 +95,47 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                 ),
 
-                // Question PageView
+                // Question Content
                 Expanded(
                   key: const Key('quiz_question_expanded'),
-                  child: PageView.builder(
-                    key: const Key('quiz_question_pageview'),
-                    controller: _pageController,
-                    itemCount: quiz.totalQuestions,
-                    // Disable user swiping to prevent conflict with vertical scrolling
-                    physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (index) {
-                      if (!_isAnimatingPage) {
-                        quiz.goToQuestion(index);
-                        setState(() {
-                          _selectedOption = null;
-                        });
-                      }
-                    },
-                    itemBuilder: (context, index) {
-                      if (index >= quiz.totalQuestions) return const SizedBox.shrink();
-                      
-                      final question = quiz.questions[index];
-                      
-                      // Note: Adjacent pages might not have perfect answer state until they become current
-                      // due to QuizProvider architecture, but pre-rendering the WebView content
-                      // is the priority for performance.
-                      final isCurrent = index == quiz.currentIndex;
-                      final answer = isCurrent ? quiz.currentUserAnswer : null; 
-                      
-                      return QuestionCard(
-                        key: Key('question_card_$index'),
-                        question: question,
-                        questionIndex: index,
-                        totalQuestions: quiz.totalQuestions,
-                        selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
-                        showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
-                        isCorrect: isCurrent ? answer?.isCorrect : null,
-                        isMarked: quiz.isMarked(question.id),
-                        showAnalysis: settings.showAnalysis,
-                        imageBasePath: quiz.currentPackageImagePath,
-                        onAiExplain: () => _showAiPanel(question),
-                        onOptionSelected: (isCurrent && answer != null)
-                            ? null
-                            : (option) => _handleAnswer(option, index),
-                        onMarkToggle: () => quiz.toggleMark(question.id),
-                        onReset: (isCurrent && answer != null)
-                            ? () {
-                                quiz.resetCurrentQuestion();
-                                setState(() {
-                                  _selectedOption = null;
-                                });
-                              }
-                            : null,
-                      );
-                    },
-                  ),
+                  child: quiz.totalQuestions > 0 
+                    ? PageView.builder(
+                        key: const Key('quiz_question_pageview'),
+                        controller: _pageController,
+                        itemCount: quiz.totalQuestions,
+                        physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics(),
+                        ),
+                        onPageChanged: (index) {
+                          if (!_isAnimatingPage) {
+                            quiz.goToQuestion(index);
+                            setState(() {
+                              _selectedOption = null;
+                            });
+                          }
+                        },
+                        itemBuilder: (context, index) {
+                          final question = quiz.questions[index];
+                          final isCurrent = index == quiz.currentIndex;
+                          final answer = isCurrent ? quiz.currentUserAnswer : null;
+
+                          return QuestionCard(
+                            key: ValueKey('question_$index'),
+                            question: question,
+                            selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
+                            showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
+                            imageBasePath: quiz.currentPackageImagePath,
+                            onOptionSelected: (isCurrent && answer != null)
+                                ? null
+                                : (option) => _handleAnswer(option, index),
+                          );
+                        },
+                      )
+                    : const SizedBox.shrink(),
                 ),
 
-                // Navigation Bar
-                _buildNavigationBar(l10n),
+                // Action Bar
+                _buildActionBar(l10n),
               ],
             ),
           ],
@@ -168,11 +148,35 @@ class _QuizScreenState extends State<QuizScreen> {
     final quiz = context.read<QuizProvider>();
     return AppBar(
       key: const Key('quiz_app_bar'),
-      title: Selector<QuizProvider, String>(
-        key: const Key('quiz_title_selector'),
-        selector: (_, provider) =>
-            provider.currentBook?.getDisplayName(l10n.locale.languageCode) ?? '',
-        builder: (_, title, __) => Text(title, key: const Key('quiz_title_text')),
+      title: Column(
+        key: const Key('quiz_title_column'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Selector<QuizProvider, String>(
+            key: const Key('quiz_title_selector'),
+            selector: (_, provider) =>
+                provider.currentBook?.getDisplayName(l10n.locale.languageCode) ?? '',
+            builder: (_, title, __) => Text(
+              title, 
+              key: const Key('quiz_title_text'),
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+          Selector<QuizProvider, String>(
+            key: const Key('quiz_order_selector'),
+            selector: (_, provider) => '${provider.currentIndex + 1} / ${provider.totalQuestions}',
+            builder: (_, order, __) => Text(
+              order,
+              key: const Key('quiz_order_text'),
+              style: TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.normal,
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ],
       ),
       leading: DopamineClickWrapper(
         key: const Key('quiz_back_wrapper'),
@@ -291,10 +295,10 @@ class _QuizScreenState extends State<QuizScreen> {
     );
   }
 
-  Widget _buildNavigationBar(AppLocalizations l10n) {
+  Widget _buildActionBar(AppLocalizations l10n) {
     return Container(
-      key: const Key('quiz_nav_bar_container'),
-      padding: const EdgeInsets.all(16),
+      key: const Key('quiz_action_bar_container'),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         boxShadow: [
@@ -306,67 +310,111 @@ class _QuizScreenState extends State<QuizScreen> {
         ],
       ),
       child: SafeArea(
-        key: const Key('quiz_nav_bar_safe_area'),
+        key: const Key('quiz_action_bar_safe_area'),
         child: Consumer<QuizProvider>(
-          key: const Key('quiz_nav_bar_consumer'),
-          builder: (context, quiz, _) => Row(
-            key: const Key('quiz_nav_bar_row'),
-            children: [
-              Expanded(
-                key: const Key('quiz_prev_button_expanded'),
-                child: DopamineClickWrapper(
-                  key: const Key('quiz_prev_wrapper'),
-                  child: ElevatedButton.icon(
-                    key: const Key('quiz_prev_button'),
-                    onPressed:
-                        quiz.currentIndex > 0 ? () => _animateToPage(quiz.currentIndex - 1) : null,
-                    icon: const Icon(Icons.arrow_back, key: Key('quiz_prev_icon')),
-                    label: Text(l10n.get('previous'), key: const Key('quiz_prev_text')),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_1')),
-              if (quiz.isTestActive) ...[
+          key: const Key('quiz_action_bar_consumer'),
+          builder: (context, quiz, _) {
+            final question = quiz.currentQuestion;
+            return Row(
+              key: const Key('action_bar'),
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Previous
                 DopamineClickWrapper(
-                  key: const Key('quiz_finish_wrapper'),
-                  child: ElevatedButton(
-                    key: const Key('quiz_finish_button'),
-                    onPressed: () => _finishTest(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orange,
-                      foregroundColor: Colors.white,
+                  key: const Key('action_prev_wrapper'),
+                  child: IconButton(
+                    key: const Key('action_prev_button'),
+                    onPressed: quiz.currentIndex > 0 ? () => _goToPage(quiz.currentIndex - 1) : null,
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: l10n.get('previous'),
+                  ),
+                ),
+                
+                // AI Explain
+                DopamineClickWrapper(
+                  key: const Key('action_ai_wrapper'),
+                  child: IconButton(
+                    key: const Key('action_ai_button'),
+                    icon: const Icon(Icons.auto_awesome),
+                    onPressed: question != null ? () => _showAiPanel(question) : null,
+                    tooltip: 'AI Explain',
+                  ),
+                ),
+
+                // Finish Test (Special center button if active)
+                if (quiz.isTestActive)
+                  DopamineClickWrapper(
+                    key: const Key('quiz_finish_wrapper'),
+                    child: ElevatedButton(
+                      key: const Key('quiz_finish_button'),
+                      onPressed: () => _finishTest(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: Text(l10n.get('finishTest'), key: const Key('quiz_finish_text')),
                     ),
-                    child: Text(l10n.get('finishTest'), key: const Key('quiz_finish_text')),
+                  )
+                else
+                  const SizedBox(width: 48), // Placeholder to keep spacing if no finish button
+
+                // Mark
+                DopamineClickWrapper(
+                  key: const Key('action_mark_wrapper'),
+                  child: IconButton(
+                    key: const Key('action_mark_button'),
+                    icon: Icon(
+                      quiz.isCurrentMarked ? Icons.bookmark : Icons.bookmark_border,
+                      color: quiz.isCurrentMarked ? Colors.orange : null,
+                    ),
+                    onPressed: question != null ? () => quiz.toggleMark(question.id) : null,
+                    tooltip: quiz.isCurrentMarked ? 'Unmark' : 'Mark',
                   ),
                 ),
-                const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_test')),
-              ],
-              Expanded(
-                key: const Key('quiz_next_button_expanded'),
-                child: DopamineClickWrapper(
-                  key: const Key('quiz_next_wrapper'),
-                  child: ElevatedButton.icon(
-                    key: const Key('quiz_next_button'),
+
+                // Reset
+                DopamineClickWrapper(
+                  key: const Key('action_reset_wrapper'),
+                  child: IconButton(
+                    key: const Key('action_reset_button'),
+                    icon: const Icon(Icons.refresh),
+                    onPressed: (quiz.currentUserAnswer != null) ? () {
+                      quiz.resetCurrentQuestion();
+                      setState(() {
+                        _selectedOption = null;
+                      });
+                    } : null,
+                    tooltip: 'Reset',
+                  ),
+                ),
+
+                // Next
+                DopamineClickWrapper(
+                  key: const Key('action_next_wrapper'),
+                  child: IconButton(
+                    key: const Key('action_next_button'),
                     onPressed: quiz.currentIndex < quiz.totalQuestions - 1
-                        ? () => _animateToPage(quiz.currentIndex + 1)
+                        ? () => _goToPage(quiz.currentIndex + 1)
                         : null,
-                    icon: const Icon(Icons.arrow_forward, key: Key('quiz_next_icon')),
-                    label: Text(l10n.get('next'), key: const Key('quiz_next_text')),
+                    icon: const Icon(Icons.arrow_forward),
+                    tooltip: l10n.get('next'),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  void _animateToPage(int page) {
+  void _goToPage(int page) {
     if (_pageController.hasClients) {
       final quiz = context.read<QuizProvider>();
       setState(() {
         _isAnimatingPage = true;
+        _selectedOption = null;
         _targetProgress = (page + 1) / quiz.totalQuestions;
       });
 
@@ -375,19 +423,16 @@ class _QuizScreenState extends State<QuizScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       ).then((_) {
-        _isAnimatingPage = false;
-        _targetProgress = null;
-        // Ensure the provider is updated after animation if not already
         if (mounted) {
-           // Reset transient selection state for the new page
-           setState(() {
-             _selectedOption = null;
-           });
-
-           final quiz = context.read<QuizProvider>();
-           if (quiz.currentIndex != page) {
-             quiz.goToQuestion(page);
-           }
+          setState(() {
+            _isAnimatingPage = false;
+            _targetProgress = null;
+          });
+          
+          final quiz = context.read<QuizProvider>();
+          if (quiz.currentIndex != page) {
+            quiz.goToQuestion(page);
+          }
         }
       });
     }
@@ -466,7 +511,7 @@ class _QuizScreenState extends State<QuizScreen> {
           final currentQuiz = context.read<QuizProvider>();
           if (currentQuiz.currentIndex == questionIndex && 
               currentQuiz.currentIndex < currentQuiz.totalQuestions - 1) {
-            _animateToPage(currentQuiz.currentIndex + 1);
+            _goToPage(currentQuiz.currentIndex + 1);
           }
         }
       });

@@ -8,3 +8,4 @@ export 'quiz_question_display.dart';
 export 'overview_sheet.dart';
 export 'dopamine_progress_bar.dart';
 export 'success_feedback.dart';
+export 'bottom_sheet_handle.dart';

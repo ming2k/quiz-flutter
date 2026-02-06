@@ -33,7 +33,7 @@ class QuizProvider extends ChangeNotifier {
 
   // AI Streaming - managed by Provider for background continuation
   final AiService _aiService = AiService();
-  final Map<int, AiStreamState> _aiStreams = {}; // questionId -> state
+  final Map<int, AiStreamState> _aiStreams = {}; // sessionId -> state
   AiServiceConfigurator? _aiConfigurator;
 
   // Progress
@@ -62,10 +62,10 @@ class QuizProvider extends ChangeNotifier {
   int? get currentChatSessionId => _currentChatSessionId;
 
   // AI Stream getters
-  AiStreamState? get currentAiStream => _currentQuestion != null ? _aiStreams[_currentQuestion!.id] : null;
+  AiStreamState? get currentAiStream => _currentChatSessionId != null ? _aiStreams[_currentChatSessionId] : null;
   bool get isAiStreaming => currentAiStream?.isLoading ?? false;
   String get aiStreamingResponse => currentAiStream?.streamingResponse ?? '';
-  AiStreamState? getAiStream(int questionId) => _aiStreams[questionId];
+  AiStreamState? getAiStream(int sessionId) => _aiStreams[sessionId];
   Book? get currentBook => _currentBook;
   Section? get currentSection => _currentSection;
   Question? get currentQuestion => _currentQuestion;
@@ -141,6 +141,9 @@ class QuizProvider extends ChangeNotifier {
   Future<void> createChatSession([String title = 'New Chat']) async {
     if (_currentQuestion == null) return;
     
+    // In the new multi-session logic, we DON'T cancel other sessions
+    // Each session can have its own background stream.
+    
     final session = await _db.createChatSession(_currentQuestion!.id, title);
     _chatSessions.insert(0, session); // Add to top
     _currentChatSessionId = session.id;
@@ -157,6 +160,9 @@ class QuizProvider extends ChangeNotifier {
   }
 
   Future<void> deleteChatSession(int sessionId) async {
+    // Cancel stream if active
+    await cancelAiChat(sessionId);
+    
     await _db.deleteChatSession(sessionId);
     _chatSessions.removeWhere((s) => s.id == sessionId);
     
@@ -183,6 +189,26 @@ class QuizProvider extends ChangeNotifier {
       if (title.isEmpty) title = 'Chat';
 
       await createChatSession(title);
+    } else if (message.isUser) {
+      // If it's the first user message in a "New Chat", update the title
+      final currentSession = _chatSessions.firstWhere((s) => s.id == _currentChatSessionId);
+      if (currentSession.title == 'New Chat' || currentSession.title == 'Chat' || currentSession.title == '新对话') {
+        String newTitle = message.text.replaceAll('\n', ' ').trim();
+        if (newTitle.length > 30) newTitle = '${newTitle.substring(0, 30)}...';
+        if (newTitle.isNotEmpty) {
+          await _db.updateChatSessionTitle(_currentChatSessionId!, newTitle);
+          // Update in-memory list
+          final index = _chatSessions.indexWhere((s) => s.id == _currentChatSessionId);
+          if (index != -1) {
+            _chatSessions[index] = ChatSession(
+              id: currentSession.id,
+              questionId: currentSession.questionId,
+              title: newTitle,
+              createdAt: currentSession.createdAt,
+            );
+          }
+        }
+      }
     }
 
     if (_currentChatSessionId != null) {
@@ -203,6 +229,12 @@ class QuizProvider extends ChangeNotifier {
   Future<void> startAiChat(String userMessage) async {
     if (_currentQuestion == null) return;
 
+    // Ensure we have a session
+    if (_currentChatSessionId == null) {
+      await createChatSession();
+    }
+    
+    final sessionId = _currentChatSessionId!;
     final questionId = _currentQuestion!.id;
 
     // Configure AI service if configurator is set
@@ -214,20 +246,18 @@ class QuizProvider extends ChangeNotifier {
       throw Exception('AI service not configured. Please set API key.');
     }
 
-    // Cancel any existing stream for this question
-    await cancelAiChat(questionId);
+    // Cancel any existing stream for THIS session
+    await cancelAiChat(sessionId);
 
     // Add user message
     await addAiChatMessage(ChatMessage(text: userMessage, isUser: true));
-
-    final sessionId = _currentChatSessionId!;
 
     // Create stream state
     final state = AiStreamState(
       questionId: questionId,
       sessionId: sessionId,
     );
-    _aiStreams[questionId] = state;
+    _aiStreams[sessionId] = state;
     notifyListeners();
 
     try {
@@ -246,17 +276,30 @@ class QuizProvider extends ChangeNotifier {
         onError: (error) async {
           state.isLoading = false;
           state.error = error.toString().replaceAll("Exception: ", "");
-          await addAiChatMessage(ChatMessage(
+          
+          // Save error to DB for this session
+          await _db.saveChatMessage(sessionId, ChatMessage(
             text: 'Error: ${state.error}',
             isUser: false,
           ));
+          
+          // If this session is still current, add to in-memory history
+          if (_currentChatSessionId == sessionId) {
+            _currentChatHistory.add(ChatMessage(
+              text: 'Error: ${state.error}',
+              isUser: false,
+            ));
+          }
+          
+          _aiStreams.remove(sessionId);
           notifyListeners();
         },
         onDone: () async {
           state.isLoading = false;
           if (state.streamingResponse.isNotEmpty && state.error == null) {
-            await _saveStreamResponse(sessionId, state.streamingResponse);
+            await _saveStreamResponse(sessionId, state.streamingResponse, questionId);
           }
+          _aiStreams.remove(sessionId);
           notifyListeners();
         },
         cancelOnError: true,
@@ -266,36 +309,54 @@ class QuizProvider extends ChangeNotifier {
     } catch (e) {
       state.isLoading = false;
       state.error = e.toString().replaceAll("Exception: ", "");
-      await addAiChatMessage(ChatMessage(
+      
+      await _db.saveChatMessage(sessionId, ChatMessage(
         text: 'Error: ${state.error}',
         isUser: false,
       ));
+      
+      if (_currentChatSessionId == sessionId) {
+        _currentChatHistory.add(ChatMessage(
+          text: 'Error: ${state.error}',
+          isUser: false,
+        ));
+      }
+      
+      _aiStreams.remove(sessionId);
       notifyListeners();
     }
   }
 
   /// Save completed stream response to chat history
-  Future<void> _saveStreamResponse(int sessionId, String response) async {
-    // Find the state with this sessionId to check if it's still valid
-    final state = _aiStreams.values.where((s) => s.sessionId == sessionId).firstOrNull;
-    if (state == null) return;
-
-    // Check if this session is still current for the question
-    if (_currentQuestion?.id == state.questionId && _currentChatSessionId == sessionId) {
+  Future<void> _saveStreamResponse(int sessionId, String response, int questionId) async {
+    // Check if this session is still current
+    if (_currentChatSessionId == sessionId) {
       await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
-      _currentChatHistory.add(ChatMessage(text: response, isUser: false));
+      // Only add to history if it's not already the last message
+      if (_currentChatHistory.isEmpty || _currentChatHistory.last.text != response || _currentChatHistory.last.isUser) {
+        _currentChatHistory.add(ChatMessage(text: response, isUser: false));
+      }
     } else {
-      // Save directly to DB even if not current
+      // Save directly to DB for background session
       await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
     }
   }
 
-  /// Cancel AI chat stream for a specific question
-  Future<void> cancelAiChat(int questionId) async {
-    final state = _aiStreams[questionId];
+  /// Cancel AI chat stream for a specific session
+  Future<void> cancelAiChat(int sessionId) async {
+    final state = _aiStreams[sessionId];
     if (state != null) {
+      final questionId = state.questionId;
+      final partialResponse = state.streamingResponse;
+      
       await state.cancel();
-      _aiStreams.remove(questionId);
+      
+      // Save partial response if exists
+      if (partialResponse.isNotEmpty) {
+        await _saveStreamResponse(sessionId, partialResponse, questionId);
+      }
+      
+      _aiStreams.remove(sessionId);
       notifyListeners();
     }
   }

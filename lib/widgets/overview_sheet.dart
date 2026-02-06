@@ -4,6 +4,7 @@ import '../providers/providers.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/stats_display.dart';
+import 'bottom_sheet_handle.dart';
 
 class OverviewSheet extends StatefulWidget {
   const OverviewSheet({super.key});
@@ -70,15 +71,7 @@ class _OverviewSheetState extends State<OverviewSheet> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Drag Handle
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                const BottomSheetHandle(),
                 
                 // Title
                 Padding(

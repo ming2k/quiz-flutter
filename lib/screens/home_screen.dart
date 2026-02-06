@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
@@ -361,6 +362,14 @@ class _HomeScreenState extends State<HomeScreen> {
     // Otherwise, use the mode from settings (global selection).
     final modeToSet = autoStart ? quiz.appMode : settings.lastAppMode;
 
+    if (modeToSet == AppMode.test && !autoStart) {
+      // Show count selector for new test
+      if (mounted) {
+        _showTestCountSelector(context, book, settings, quiz);
+      }
+      return;
+    }
+
     if (modeToSet == AppMode.test) {
       quiz.startTest(settings.testQuestionCount);
     } else {
@@ -373,5 +382,83 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(builder: (_) => const QuizScreen()),
       );
     }
+  }
+
+  void _showTestCountSelector(BuildContext context, Book book, SettingsProvider settings, QuizProvider quiz) {
+    final l10n = AppLocalizations.of(context);
+    int selectedCount = settings.testQuestionCount;
+    const int minCount = 5;
+    // Cap at book's total questions
+    final int maxCount = book.totalQuestions;
+    const int step = 5;
+    
+    if (maxCount <= minCount) {
+      // Just start if too few questions
+      quiz.startTest(maxCount);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const QuizScreen()),
+      );
+      return;
+    }
+
+    final List<int> options = List.generate(
+      (maxCount - minCount) ~/ step + 1, 
+      (index) => minCount + (index * step)
+    );
+    // Ensure maxCount is included if not a multiple of step
+    if (options.last != maxCount && maxCount > minCount) {
+      options.add(maxCount);
+    }
+    
+    int initialIndex = options.indexOf(selectedCount);
+    if (initialIndex == -1) {
+      initialIndex = options.indexWhere((val) => val >= selectedCount);
+      if (initialIndex == -1) initialIndex = options.length - 1;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.get('testQuestionCount')),
+        content: SizedBox(
+          height: 150,
+          width: double.maxFinite,
+          child: CupertinoPicker(
+            scrollController: FixedExtentScrollController(initialItem: initialIndex),
+            itemExtent: 32,
+            onSelectedItemChanged: (index) {
+              selectedCount = options[index];
+            },
+            children: options.map((count) => Center(
+              child: Text(
+                '$count',
+                style: const TextStyle(fontSize: 20),
+              ),
+            )).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.get('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              quiz.startTest(selectedCount);
+              // Also update settings to remember this choice
+              settings.setTestQuestionCount(selectedCount);
+              
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const QuizScreen()),
+              );
+            },
+            child: Text(l10n.get('confirm')),
+          ),
+        ],
+      ),
+    );
   }
 }

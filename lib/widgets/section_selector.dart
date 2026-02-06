@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
 import '../l10n/app_localizations.dart';
+import 'bottom_sheet_handle.dart';
 
 class SectionSelector extends StatelessWidget {
   final List<Section> sections;
@@ -33,15 +34,7 @@ class SectionSelector extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
             // Drag Handle
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const BottomSheetHandle(),
             // Title
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),

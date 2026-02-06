@@ -22,6 +22,7 @@ class AiStreamState {
   }
 
   Future<void> cancel() async {
+    isLoading = false;
     await _subscription?.cancel();
     _subscription = null;
   }

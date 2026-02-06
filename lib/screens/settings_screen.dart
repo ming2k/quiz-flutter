@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
 import '../l10n/app_localizations.dart';
@@ -370,25 +371,56 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showTestQuestionCountDialog(BuildContext context, SettingsProvider settings, AppLocalizations l10n) {
-    final counts = [10, 20, 30, 50, 100];
+    int selectedCount = settings.testQuestionCount;
+    const int minCount = 5;
+    const int maxCount = 200;
+    const int step = 5;
+    
+    final List<int> options = List.generate(
+      (maxCount - minCount) ~/ step + 1, 
+      (index) => minCount + (index * step)
+    );
+    
+    int initialIndex = options.indexOf(selectedCount);
+    if (initialIndex == -1) {
+      initialIndex = options.indexWhere((val) => val >= selectedCount);
+      if (initialIndex == -1) initialIndex = options.length - 1;
+    }
 
     showDialog(
       context: context,
-      builder: (context) => SimpleDialog(
+      builder: (context) => AlertDialog(
         title: Text(l10n.get('testQuestionCount')),
-        children: counts
-            .map(
-              (count) => RadioListTile<int>(
-                title: Text('$count'),
-                value: count,
-                groupValue: settings.testQuestionCount,
-                onChanged: (value) {
-                  settings.setTestQuestionCount(value!);
-                  Navigator.pop(context);
-                },
+        content: SizedBox(
+          height: 150,
+          width: double.maxFinite,
+          child: CupertinoPicker(
+            scrollController: FixedExtentScrollController(initialItem: initialIndex),
+            itemExtent: 32,
+            onSelectedItemChanged: (index) {
+              selectedCount = options[index];
+            },
+            children: options.map((count) => Center(
+              child: Text(
+                '$count',
+                style: const TextStyle(fontSize: 20),
               ),
-            )
-            .toList(),
+            )).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.get('cancel')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              settings.setTestQuestionCount(selectedCount);
+              Navigator.pop(context);
+            },
+            child: Text(l10n.get('confirm')),
+          ),
+        ],
       ),
     );
   }

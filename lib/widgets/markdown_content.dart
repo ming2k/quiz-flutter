@@ -35,6 +35,32 @@ class MarkdownContent extends StatelessWidget {
         color: baseTextColor,
         fontSize: fontSize,
       ),
+      blockquote: TextStyle(
+        color: baseTextColor?.withValues(alpha: 0.85),
+        fontSize: fontSize,
+      ),
+      blockquoteDecoration: BoxDecoration(
+        color: baseTextColor?.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          left: BorderSide(
+            color: baseTextColor?.withValues(alpha: 0.3) ?? theme.colorScheme.primary,
+            width: 4,
+          ),
+        ),
+      ),
+      blockquotePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      code: TextStyle(
+        color: theme.colorScheme.secondary,
+        fontSize: fontSize * 0.9,
+        backgroundColor: Colors.transparent, // Handled by decoration or parent
+      ),
+      codeblockDecoration: BoxDecoration(
+        color: baseTextColor?.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: baseTextColor?.withValues(alpha: 0.1) ?? Colors.transparent),
+      ),
+      codeblockPadding: const EdgeInsets.all(12),
     );
 
     final markdownBody = MarkdownBody(

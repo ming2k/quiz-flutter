@@ -35,7 +35,7 @@ class QuizQuestionDisplay extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       key: const Key('quiz_question_listview'),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       children: [
         // Parent Content (Passage) for Reading Comprehension
         if (question.parentContent != null) ...[

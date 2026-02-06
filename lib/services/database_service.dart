@@ -319,6 +319,16 @@ class DatabaseService {
     return ChatSession(id: id, questionId: questionId, title: title, createdAt: now);
   }
 
+  Future<void> updateChatSessionTitle(int sessionId, String title) async {
+    final db = await database;
+    await db.update(
+      'ai_chat_sessions',
+      {'title': title},
+      where: 'id = ?',
+      whereArgs: [sessionId],
+    );
+  }
+
   Future<void> deleteChatSession(int sessionId) async {
     final db = await database;
     await db.delete(
