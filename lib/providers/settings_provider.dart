@@ -33,6 +33,10 @@ class SettingsProvider extends ChangeNotifier {
     '为什么其他选项是错误的？',
     '这道题考察的知识点是什么？',
   ];
+  List<String> _selectionMenuItems = [
+    'Copy',
+    'Select All',
+  ];
 
   // Getters
   AppMode get lastAppMode => _lastAppMode;
@@ -51,6 +55,7 @@ class SettingsProvider extends ChangeNotifier {
   String get aiModel => _aiModel;
   String get aiSystemPrompt => _aiSystemPrompt;
   List<String> get customAiPrompts => List.unmodifiable(_customAiPrompts);
+  List<String> get selectionMenuItems => List.unmodifiable(_selectionMenuItems);
 
   SettingsProvider() {
     _loadSettings();
@@ -118,6 +123,16 @@ class SettingsProvider extends ChangeNotifier {
           '详细解析本题',
           '为什么其他选项是错误的？',
           '这道题考察的知识点是什么？',
+        ];
+    _selectionMenuItems = await _storage.loadSetting<List<String>>(
+            'selectionMenuItems',
+            defaultValue: [
+              'Copy',
+              'Select All',
+            ]) ??
+        [
+          'Copy',
+          'Select All',
         ];
     notifyListeners();
   }
@@ -216,6 +231,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setCustomAiPrompts(List<String> prompts) async {
     _customAiPrompts = prompts;
     await _storage.saveSetting('customAiPrompts', prompts);
+    notifyListeners();
+  }
+
+  Future<void> setSelectionMenuItems(List<String> items) async {
+    _selectionMenuItems = items;
+    await _storage.saveSetting('selectionMenuItems', items);
     notifyListeners();
   }
 }

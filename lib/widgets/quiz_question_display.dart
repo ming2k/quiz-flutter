@@ -33,11 +33,13 @@ class QuizQuestionDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      key: const Key('quiz_question_listview'),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: [
         // Parent Content (Passage) for Reading Comprehension
         if (question.parentContent != null) ...[
           Container(
+            key: const Key('quiz_question_parent_container'),
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
@@ -46,19 +48,22 @@ class QuizQuestionDisplay extends StatelessWidget {
               border: Border.all(color: textColor.withValues(alpha: 0.1)),
             ),
             child: MarkdownContent(
+              key: const Key('quiz_question_parent_markdown'),
               content: question.parentContent!,
               imageBasePath: imageBasePath,
               fontSize: 16,
               textColor: textColor,
             ),
           ),
-          const Divider(height: 32),
+          const Divider(key: Key('quiz_question_parent_divider'), height: 32),
         ],
 
         // Question Content (Stem)
         Padding(
+          key: const Key('quiz_question_stem_padding'),
           padding: const EdgeInsets.only(bottom: 16),
           child: MarkdownContent(
+            key: const Key('quiz_question_stem_markdown'),
             content: question.content,
             imageBasePath: imageBasePath,
             fontSize: 18,
@@ -71,10 +76,10 @@ class QuizQuestionDisplay extends StatelessWidget {
 
         // Explanation
         if (showAnswer && question.explanation.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: 20, key: Key('quiz_question_explanation_spacer_top')),
           _buildExplanationCard(context),
         ],
-        const SizedBox(height: 32),
+        const SizedBox(height: 32, key: Key('quiz_question_bottom_spacer')),
       ],
     );
   }
@@ -106,12 +111,14 @@ class QuizQuestionDisplay extends StatelessWidget {
     }
 
     return GestureDetector(
+      key: Key('option_gesture_${entry.key}'),
       onTap: () {
         if (!showAnswer && onOptionSelected != null) {
           onOptionSelected!(entry.key);
         }
       },
       child: Container(
+        key: Key('option_container_${entry.key}'),
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -122,9 +129,11 @@ class QuizQuestionDisplay extends StatelessWidget {
               : Border.all(color: textColor.withValues(alpha: 0.12), width: 1),
         ),
         child: Row(
+          key: Key('option_row_${entry.key}'),
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
+              key: Key('option_label_container_${entry.key}'),
               width: 32,
               height: 32,
               decoration: BoxDecoration(
@@ -134,6 +143,7 @@ class QuizQuestionDisplay extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 entry.key,
+                key: Key('option_label_text_${entry.key}'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: labelTextColor,
@@ -141,11 +151,14 @@ class QuizQuestionDisplay extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14, key: Key('option_spacer_${entry.key}')),
             Expanded(
+              key: Key('option_content_expanded_${entry.key}'),
               child: Padding(
+                key: Key('option_content_padding_${entry.key}'),
                 padding: const EdgeInsets.only(top: 4),
                 child: MarkdownContent(
+                  key: Key('option_content_markdown_${entry.key}'),
                   content: entry.value,
                   imageBasePath: imageBasePath,
                   fontSize: 16,
@@ -162,6 +175,7 @@ class QuizQuestionDisplay extends StatelessWidget {
 
   Widget _buildExplanationCard(BuildContext context) {
     return Container(
+      key: const Key('quiz_explanation_container'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -169,14 +183,17 @@ class QuizQuestionDisplay extends StatelessWidget {
         border: Border.all(color: textColor.withValues(alpha: 0.12)),
       ),
       child: Column(
+        key: const Key('quiz_explanation_column'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            key: const Key('quiz_explanation_header_row'),
             children: [
-              const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 20),
-              const SizedBox(width: 8),
+              const Icon(Icons.lightbulb_outline, key: Key('quiz_explanation_icon'), color: Colors.orange, size: 20),
+              const SizedBox(width: 8, key: Key('quiz_explanation_header_spacer')),
               Text(
                 '解析',
+                key: const Key('quiz_explanation_title'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: primaryColor,
@@ -185,8 +202,9 @@ class QuizQuestionDisplay extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 8, key: Key('quiz_explanation_content_spacer')),
           MarkdownContent(
+            key: const Key('quiz_explanation_markdown'),
             content: question.explanation,
             imageBasePath: imageBasePath,
             fontSize: 15,

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:confetti/confetti.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
-import '../services/sound_service.dart';
+import '../services/services.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/question_card.dart';
 import '../widgets/section_selector.dart';
@@ -25,6 +25,7 @@ class _QuizScreenState extends State<QuizScreen> {
   late ConfettiController _confettiController;
   late PageController _pageController;
   final SoundService _soundService = SoundService();
+  final HapticService _hapticService = HapticService();
   
   // Local state to track selection before confirmation/animation
   String? _selectedOption;
@@ -38,6 +39,7 @@ class _QuizScreenState extends State<QuizScreen> {
     _confettiController =
         ConfettiController(duration: const Duration(seconds: 2));
     _soundService.init();
+    _hapticService.init();
     
     final quiz = context.read<QuizProvider>();
     _pageController = PageController(initialPage: quiz.currentIndex);
@@ -65,14 +67,19 @@ class _QuizScreenState extends State<QuizScreen> {
     }
 
     return Scaffold(
+      key: const Key('quiz_scaffold'),
       appBar: _buildAppBar(context, l10n),
       body: Stack(
+        key: const Key('quiz_body_stack'),
         children: [
           Column(
+            key: const Key('quiz_main_column'),
             children: [
               // Question PageView
               Expanded(
+                key: const Key('quiz_question_expanded'),
                 child: PageView.builder(
+                  key: const Key('quiz_question_pageview'),
                   controller: _pageController,
                   itemCount: quiz.totalQuestions,
                   // Disable user swiping to prevent conflict with vertical scrolling
@@ -97,6 +104,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     final answer = isCurrent ? quiz.currentUserAnswer : null; 
                     
                     return QuestionCard(
+                      key: Key('question_card_$index'),
                       question: question,
                       questionIndex: index,
                       totalQuestions: quiz.totalQuestions,
@@ -131,8 +139,10 @@ class _QuizScreenState extends State<QuizScreen> {
 
           // Confetti
           Align(
+            key: const Key('quiz_confetti_align'),
             alignment: Alignment.topCenter,
             child: ConfettiWidget(
+              key: const Key('quiz_confetti_widget'),
               confettiController: _confettiController,
               blastDirectionality: BlastDirectionality.explosive,
               shouldLoop: false,
@@ -224,10 +234,11 @@ class _QuizScreenState extends State<QuizScreen> {
               key: const Key('menu_history'),
               value: 'history',
               child: Row(
+                key: const Key('menu_history_row'),
                 children: [
-                  const Icon(Icons.history, size: 20),
-                  const SizedBox(width: 8),
-                  Text(l10n.history),
+                  const Icon(Icons.history, key: Key('menu_history_icon'), size: 20),
+                  const SizedBox(width: 8, key: Key('menu_history_spacer')),
+                  Text(l10n.history, key: const Key('menu_history_text')),
                 ],
               ),
             ),
@@ -235,10 +246,11 @@ class _QuizScreenState extends State<QuizScreen> {
               key: const Key('menu_settings'),
               value: 'settings',
               child: Row(
+                key: const Key('menu_settings_row'),
                 children: [
-                  const Icon(Icons.settings, size: 20),
-                  const SizedBox(width: 8),
-                  Text(l10n.settings),
+                  const Icon(Icons.settings, key: Key('menu_settings_icon'), size: 20),
+                  const SizedBox(width: 8, key: Key('menu_settings_spacer')),
+                  Text(l10n.settings, key: const Key('menu_settings_text')),
                 ],
               ),
             ),
@@ -246,10 +258,12 @@ class _QuizScreenState extends State<QuizScreen> {
               key: const Key('menu_reset'),
               value: 'reset',
               child: Row(
+                key: const Key('menu_reset_row'),
                 children: [
-                  const Icon(Icons.restart_alt, size: 20, color: Colors.red),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.restart_alt, key: Key('menu_reset_icon'), size: 20, color: Colors.red),
+                  const SizedBox(width: 8, key: Key('menu_reset_spacer')),
                   Text(l10n.get('reset'),
+                      key: const Key('menu_reset_text'),
                       style: const TextStyle(color: Colors.red)),
                 ],
               ),
@@ -262,6 +276,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Widget _buildNavigationBar(AppLocalizations l10n) {
     return Container(
+      key: const Key('quiz_nav_bar_container'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -274,10 +289,14 @@ class _QuizScreenState extends State<QuizScreen> {
         ],
       ),
       child: SafeArea(
+        key: const Key('quiz_nav_bar_safe_area'),
         child: Consumer<QuizProvider>(
+          key: const Key('quiz_nav_bar_consumer'),
           builder: (context, quiz, _) => Row(
+            key: const Key('quiz_nav_bar_row'),
             children: [
               Expanded(
+                key: const Key('quiz_prev_button_expanded'),
                 child: ElevatedButton.icon(
                   key: const Key('quiz_prev_button'),
                   onPressed:
@@ -286,7 +305,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   label: Text(l10n.get('previous')),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_1')),
               if (quiz.isTestActive) ...[
                 ElevatedButton(
                   key: const Key('quiz_finish_button'),
@@ -297,9 +316,10 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                   child: Text(l10n.get('finishTest')),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 16, key: Key('quiz_nav_bar_spacer_test')),
               ],
               Expanded(
+                key: const Key('quiz_next_button_expanded'),
                 child: ElevatedButton.icon(
                   key: const Key('quiz_next_button'),
                   onPressed: quiz.currentIndex < quiz.totalQuestions - 1
@@ -367,17 +387,27 @@ class _QuizScreenState extends State<QuizScreen> {
     final isCorrect =
         option.toUpperCase() == quiz.currentQuestion!.answer.toUpperCase();
 
-    // Haptic feedback
-    if (settings.hapticFeedback) {
-      HapticFeedback.mediumImpact();
+    // Update streak
+    if (isCorrect) {
+      _soundService.incrementStreak();
+    } else {
+      _soundService.resetStreak();
     }
 
-    // Sound effects
-    if (settings.soundEffects) {
-      if (isCorrect) {
+    // Sound effects & Haptic feedback
+    if (isCorrect) {
+      if (settings.soundEffects) {
         _soundService.playCorrect();
-      } else {
+      }
+      if (settings.hapticFeedback) {
+        _hapticService.playCorrect(_soundService.currentStreak);
+      }
+    } else {
+      if (settings.soundEffects) {
         _soundService.playWrong();
+      }
+      if (settings.hapticFeedback) {
+        _hapticService.playWrong();
       }
     }
 
@@ -449,6 +479,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ElevatedButton(
             onPressed: () {
               quiz.resetAllProgress();
+              _soundService.resetStreak();
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(

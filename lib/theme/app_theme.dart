@@ -51,6 +51,11 @@ class AppTheme {
             ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
             : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
+      textSelectionTheme: TextSelectionThemeData(
+        selectionColor: colorScheme.primary.withValues(alpha: 0.3),
+        selectionHandleColor: colorScheme.primary,
+        cursorColor: colorScheme.primary,
+      ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

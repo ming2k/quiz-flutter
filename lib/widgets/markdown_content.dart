@@ -4,6 +4,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:path/path.dart' as p;
+import 'package:provider/provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/quiz_provider.dart';
 
 class MarkdownContent extends StatelessWidget {
   final String content;
@@ -24,6 +27,7 @@ class MarkdownContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final settings = Provider.of<SettingsProvider>(context);
     final baseTextColor = textColor ?? theme.textTheme.bodyLarge?.color;
     
     final styleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
@@ -33,9 +37,9 @@ class MarkdownContent extends StatelessWidget {
       ),
     );
 
-    return MarkdownBody(
+    final markdownBody = MarkdownBody(
       data: content,
-      selectable: selectable,
+      selectable: false, // Must be false when using SelectionArea, and we don't want the default SelectableText if selectable is true
       styleSheet: styleSheet,
       builders: {
         'latex': LatexElementBuilder(
@@ -59,6 +63,62 @@ class MarkdownContent extends StatelessWidget {
           return const Icon(Icons.broken_image, color: Colors.grey);
         });
       },
+    );
+
+    if (!selectable) {
+      return markdownBody;
+    }
+
+    return SelectionArea(
+      contextMenuBuilder: (context, selectableRegionState) {
+        final List<ContextMenuButtonItem> items = 
+            selectableRegionState.contextMenuButtonItems;
+        
+        // 1. Identify and extract Eudic item
+        final eudicItem = items.where((item) => 
+            item.label?.toLowerCase().contains('eudic') ?? false).firstOrNull;
+        if (eudicItem != null) items.remove(eudicItem);
+
+        // 2. Build the initial list based on user preference (Copy, Select All)
+        final List<ContextMenuButtonItem> result = [];
+        for (final label in settings.selectionMenuItems) {
+          final standardItem = items.where((i) {
+            if (label == 'Copy' && i.type == ContextMenuButtonType.copy) return true;
+            if (label == 'Select All' && i.type == ContextMenuButtonType.selectAll) return true;
+            return false;
+          }).firstOrNull;
+
+          if (standardItem != null) {
+            result.add(standardItem);
+            items.remove(standardItem);
+          }
+        }
+
+        // 3. Add remaining items and handle Eudic position
+        if (eudicItem != null) {
+          // Find 'Share' item index in the remaining items or the result so far
+          final shareIndex = items.indexWhere((item) => 
+              item.type == ContextMenuButtonType.share || 
+              (item.label?.toLowerCase().contains('share') ?? false));
+
+          if (shareIndex != -1) {
+            // Insert after Share
+            items.insert(shareIndex + 1, eudicItem);
+          } else {
+            // If Share not found, put it at the end of remaining items
+            items.add(eudicItem);
+          }
+        }
+
+        // Add the rest
+        result.addAll(items);
+
+        return AdaptiveTextSelectionToolbar.buttonItems(
+          anchors: selectableRegionState.contextMenuAnchors,
+          buttonItems: result,
+        );
+      },
+      child: markdownBody,
     );
   }
 }

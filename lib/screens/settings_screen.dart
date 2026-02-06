@@ -96,9 +96,65 @@ class SettingsScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showModelDialog(context, settings),
               ),
+              const Divider(),
+
+              // Text Selection Section
+              _buildSectionHeader(context, '文本选择菜单'),
+              ListTile(
+                title: const Text('菜单项排序'),
+                subtitle: Text(settings.selectionMenuItems.join(', ')),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showSelectionMenuOrderDialog(context, settings),
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showSelectionMenuOrderDialog(BuildContext context, SettingsProvider settings) {
+    List<String> items = List.from(settings.selectionMenuItems);
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('调整菜单顺序'),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: ReorderableListView(
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  final String item = items.removeAt(oldIndex);
+                  items.insert(newIndex, item);
+                });
+              },
+              children: items
+                  .map((item) => ListTile(
+                        key: ValueKey(item),
+                        title: Text(item),
+                        trailing: const Icon(Icons.drag_handle),
+                      ))
+                  .toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                settings.setSelectionMenuItems(items);
+                Navigator.pop(context);
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        ),
       ),
     );
   }

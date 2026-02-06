@@ -41,14 +41,18 @@ class QuestionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Column(
+      key: const Key('question_card_column'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Header Row (Order, AI, Mark, Reset)
         Padding(
+          key: const Key('question_card_header_padding'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
+            key: const Key('question_card_header_row'),
             children: [
               Text(
+                key: const Key('question_card_index_text'),
                 questionIndex != null && totalQuestions != null
                     ? '${questionIndex! + 1} / $totalQuestions'
                     : 'ID: ${question.id}',
@@ -58,7 +62,7 @@ class QuestionCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const Spacer(),
+              const Spacer(key: Key('question_card_header_spacer')),
               if (onAiExplain != null)
                 IconButton(
                   key: const Key('question_ai_button'),
@@ -88,7 +92,9 @@ class QuestionCard extends StatelessWidget {
 
         // WebView Content (Stem + Options + Explanation)
         Expanded(
+          key: const Key('question_card_display_expanded'),
           child: QuizQuestionDisplay(
+            key: const Key('question_card_display'),
             question: question,
             selectedOption: selectedOption,
             showAnswer: showAnswer,

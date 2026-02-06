@@ -51,16 +51,19 @@ class SoundService {
     _initialized = true;
   }
 
+  /// Increment streak
+  void incrementStreak() {
+    _currentStreak++;
+  }
+
   /// Play correct answer sound based on current streak
   Future<void> playCorrect() async {
     if (!_initialized) return;
 
-    _currentStreak++;
-
     AudioPlayer? player;
     if (_currentStreak >= 6) {
       player = _acePlayer;
-    } else {
+    } else if (_currentStreak > 0) {
       player = _streakPlayers[_currentStreak - 1];
     }
 
@@ -71,11 +74,9 @@ class SoundService {
     }
   }
 
-  /// Play wrong answer sound and reset streak
+  /// Play wrong answer sound
   Future<void> playWrong() async {
     if (!_initialized || _wrongPlayer == null) return;
-
-    _currentStreak = 0;
 
     await _wrongPlayer!.stop();
     await _wrongPlayer!.seek(Duration.zero);
