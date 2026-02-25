@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.0] - 2026-02-25
+
+### Added
+- **Internationalization (i18n)**: Full localization support using `flutter gen-l10n` with ARB files for English and Chinese.
+
+### Changed
+- **Overview Sheet Filters**: Replaced scrollable text chips with icon-only buttons that divide the screen width equally and support single selection.
+- **UI & Bug Fixes**: Addressed multiple layout and logic issues across quiz, home, settings, and test result screens; improved toast animations and AI chat panel behavior.
+
 ## [1.1.0] - 2026-02-07
 
 ### Added
