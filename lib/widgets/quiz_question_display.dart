@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/models.dart';
+import '../l10n/app_localizations.dart';
 import 'markdown_content.dart';
 import 'dopamine_click_wrapper.dart';
 
@@ -90,9 +91,7 @@ class QuizQuestionDisplay extends StatelessWidget {
     final bool isCorrect = entry.key.toUpperCase() == question.answer.toUpperCase();
     
     Color cardColor = surfaceColor;
-    Color labelColor = Theme.of(context).brightness == Brightness.dark 
-        ? Colors.grey[800]! 
-        : Colors.grey[200]!;
+    Color labelColor = Theme.of(context).colorScheme.surfaceContainerHighest;
     Color labelTextColor = textColor;
 
     if (showAnswer) {
@@ -204,7 +203,7 @@ class QuizQuestionDisplay extends StatelessWidget {
               const Icon(Icons.lightbulb_outline, key: Key('quiz_explanation_icon'), color: Colors.orange, size: 20),
               const SizedBox(width: 8, key: Key('quiz_explanation_header_spacer')),
               Text(
-                '解析',
+                AppLocalizations.of(context).analysis,
                 key: const Key('quiz_explanation_title'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,

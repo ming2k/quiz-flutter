@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum AppMode { practice, review, memorize, test }
+enum AppMode { practice, test }
 
 class UserAnswer {
   final String? selected;
@@ -94,8 +94,6 @@ class UserProgress {
   })  : modePositions = modePositions ??
             {
               AppMode.practice: 0,
-              AppMode.review: 0,
-              AppMode.memorize: 0,
               AppMode.test: 0,
             },
         partitionModePositions = partitionModePositions ?? {},
@@ -110,27 +108,31 @@ class UserProgress {
         orElse: () => AppMode.practice,
       ),
       currentQuestionIndex: json['currentQuestionIndex'] as int? ?? 0,
-      modePositions: (json['modePositions'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(
-              AppMode.values.firstWhere((e) => e.name == k),
-              v as int,
-            ),
-          ) ??
-          {},
+      modePositions: Map.fromEntries(
+        ((json['modePositions'] as Map<String, dynamic>?) ?? {}).entries
+            .where((e) => AppMode.values.any((m) => m.name == e.key))
+            .map((e) => MapEntry(
+                  AppMode.values.firstWhere((m) => m.name == e.key),
+                  e.value as int,
+                )),
+      ),
       currentPartitionId: json['currentPartitionId'] as String? ?? 'all',
-      partitionModePositions:
-          (json['partitionModePositions'] as Map<String, dynamic>?)?.map(
-                (k, v) => MapEntry(
-                  k,
-                  (v as Map<String, dynamic>).map(
-                    (mk, mv) => MapEntry(
-                      AppMode.values.firstWhere((e) => e.name == mk),
-                      mv as int,
-                    ),
-                  ),
+      partitionModePositions: Map.fromEntries(
+        ((json['partitionModePositions'] as Map<String, dynamic>?) ?? {}).entries.map(
+              (e) => MapEntry(
+                e.key,
+                Map.fromEntries(
+                  (e.value as Map<String, dynamic>)
+                      .entries
+                      .where((me) => AppMode.values.any((m) => m.name == me.key))
+                      .map((me) => MapEntry(
+                            AppMode.values.firstWhere((m) => m.name == me.key),
+                            me.value as int,
+                          )),
                 ),
-              ) ??
-              {},
+              ),
+            ),
+      ),
       statsByPartition:
           (json['statsByPartition'] as Map<String, dynamic>?)?.map(
                 (k, v) => MapEntry(k, PartitionStats.fromJson(v)),

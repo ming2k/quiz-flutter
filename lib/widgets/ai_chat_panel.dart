@@ -5,6 +5,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
 import '../utils/toast_utils.dart';
+import '../l10n/app_localizations.dart';
 import 'markdown_content.dart';
 import 'bottom_sheet_handle.dart';
 
@@ -137,8 +138,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
     final extraItemCount = (hasStreaming || hasLoadingIndicator) ? 1 : 0;
     final itemCount = messages.length + extraItemCount;
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isCurrentSessionStreaming = aiStream != null && 
+    final bool isCurrentSessionStreaming = aiStream != null &&
                                            aiStream.isLoading && 
                                            aiStream.sessionId == quiz.currentChatSessionId;
     final bool hasText = _messageController.text.trim().isNotEmpty;
@@ -169,7 +169,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
               key: const Key('ai_chat_header_row'),
               children: [
                 Text(
-                  'AI 解析',
+                  AppLocalizations.of(context).aiChatTitle,
                   key: const Key('ai_chat_header_title'),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
@@ -177,16 +177,16 @@ class _AiChatPanelState extends State<AiChatPanel> {
                 IconButton(
                   key: const Key('ai_chat_history_button'),
                   icon: const Icon(Icons.history),
-                  tooltip: 'Chat History',
+                  tooltip: AppLocalizations.of(context).chatHistory,
                   onPressed: () => _showHistorySheet(context),
                 ),
                 IconButton(
                   key: const Key('ai_chat_new_button'),
                   icon: const Icon(Icons.add),
-                  tooltip: '新对话',
+                  tooltip: AppLocalizations.of(context).newChat,
                   onPressed: () {
                     FocusScope.of(context).unfocus();
-                    quiz.createChatSession('新对话');
+                    quiz.createChatSession(AppLocalizations.of(context).newChat);
                   },
                 ),
               ],
@@ -213,7 +213,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
                       // 2. Streaming bubble or loading indicator at the end
                       if (hasStreaming) {
-                        return _buildMessageBubble(ChatMessage(text: aiStream!.streamingResponse, isUser: false), index);
+                        return _buildMessageBubble(ChatMessage(text: aiStream!.streamingResponse, isUser: false), index, isStreaming: true);
                       } else {
                         return _buildMessageBubble(ChatMessage(text: '...', isUser: false), index);
                       }
@@ -247,10 +247,10 @@ class _AiChatPanelState extends State<AiChatPanel> {
                     child: Container(
                       key: const Key('ai_chat_input_inner_container'),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade100,
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300,
+                          color: Theme.of(context).colorScheme.outlineVariant,
                           width: 1,
                         ),
                       ),
@@ -262,10 +262,10 @@ class _AiChatPanelState extends State<AiChatPanel> {
                         minLines: 1,
                         textInputAction: TextInputAction.send,
                         style: const TextStyle(fontSize: 15),
-                        decoration: const InputDecoration(
-                          hintText: '输入问题...',
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context).chatInputHint,
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           isDense: true,
                           filled: true,
                           fillColor: Colors.transparent,
@@ -318,15 +318,17 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
-  static const _suggestions = [
-    '详细解析本题',
-    '为什么其他选项是错误的？',
-    '这道题考察的知识点是什么？',
-    '用更简单的话解释',
-    '帮我翻译成中文',
+  List<String> _suggestions(AppLocalizations l10n) => [
+    l10n.aiSuggestion1,
+    l10n.aiSuggestion2,
+    l10n.aiSuggestion3,
+    l10n.aiSuggestion4,
+    l10n.aiSuggestion5,
   ];
 
   Widget _buildQuickReplies(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final suggestions = _suggestions(l10n);
 
     return LayoutBuilder(
       key: const Key('ai_chat_quick_replies_layout'),
@@ -347,7 +349,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                   Icon(Icons.chat_bubble_outline, key: const Key('ai_chat_quick_replies_icon'), size: 48, color: Colors.grey.shade400),
                   const SizedBox(height: 16, key: Key('ai_chat_quick_replies_spacer_1')),
                   Text(
-                    'Start a conversation with AI',
+                    l10n.startConversation,
                     key: const Key('ai_chat_quick_replies_text'),
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                   ),
@@ -357,7 +359,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
                     spacing: 8,
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
-                    children: _suggestions.asMap().entries.map((entry) {
+                    children: suggestions.asMap().entries.map((entry) {
                       final index = entry.key;
                       final text = entry.value;
                       return ActionChip(
@@ -402,20 +404,20 @@ class _AiChatPanelState extends State<AiChatPanel> {
                     key: const Key('ai_chat_history_header_padding'),
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      '历史记录',
+                      AppLocalizations.of(context).chatHistory,
                       key: const Key('ai_chat_history_title'),
                       style: Theme.of(context).textTheme.titleLarge,
                       textAlign: TextAlign.center,
                     ),
                   ),
                   if (sessions.isEmpty)
-                    const Padding(
-                      key: Key('ai_chat_history_empty_padding'),
-                      padding: EdgeInsets.all(48.0),
+                    Padding(
+                      key: const Key('ai_chat_history_empty_padding'),
+                      padding: const EdgeInsets.all(48.0),
                       child: Text(
-                        '暂无记录',
-                        key: Key('ai_chat_history_empty_text'),
-                        style: TextStyle(color: Colors.grey),
+                        AppLocalizations.of(context).noChatHistory,
+                        key: const Key('ai_chat_history_empty_text'),
+                        style: const TextStyle(color: Colors.grey),
                         textAlign: TextAlign.center,
                       ),
                     )
@@ -488,17 +490,18 @@ class _AiChatPanelState extends State<AiChatPanel> {
   }
 
   void _confirmDeleteSession(BuildContext context, QuizProvider quiz, ChatSession session) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('ai_chat_delete_dialog'),
-        title: const Text('删除对话？', key: Key('ai_chat_delete_dialog_title')),
-        content: Text('确定要删除 "${session.title}" 吗？', key: const Key('ai_chat_delete_dialog_content')),
+        title: Text(l10n.deleteChat, key: const Key('ai_chat_delete_dialog_title')),
+        content: Text(l10n.confirmDeleteChat(session.title), key: const Key('ai_chat_delete_dialog_content')),
         actions: [
           TextButton(
             key: const Key('ai_chat_delete_dialog_cancel'),
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             key: const Key('ai_chat_delete_dialog_confirm'),
@@ -506,21 +509,21 @@ class _AiChatPanelState extends State<AiChatPanel> {
               quiz.deleteChatSession(session.id);
               Navigator.pop(context);
             },
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, int index) {
+  Widget _buildMessageBubble(ChatMessage message, int index, {bool isStreaming = false}) {
     final isUser = message.isUser;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     final bubbleColor = isUser
         ? colorScheme.primary
-        : (theme.brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200);
+        : theme.colorScheme.surfaceContainerHighest;
 
     final textColor = isUser
         ? colorScheme.onPrimary
@@ -545,23 +548,29 @@ class _AiChatPanelState extends State<AiChatPanel> {
               bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
             ),
           ),
-          child: Theme(
-            key: Key('ai_chat_message_theme_$index'),
-            data: theme.copyWith(
-              textSelectionTheme: TextSelectionThemeData(
-                selectionColor: isUser 
-                    ? colorScheme.onPrimary.withValues(alpha: 0.3)
-                    : colorScheme.primary.withValues(alpha: 0.3),
-                selectionHandleColor: isUser ? colorScheme.onPrimary : colorScheme.primary,
-              ),
-            ),
-            child: MarkdownContent(
-              key: Key('ai_chat_message_markdown_$index'),
-              content: message.text,
-              fontSize: 15,
-              textColor: textColor,
-            ),
-          ),
+          child: isStreaming
+              ? Text(
+                  message.text,
+                  key: Key('ai_chat_message_streaming_$index'),
+                  style: TextStyle(color: textColor, fontSize: 15, height: 1.5),
+                )
+              : Theme(
+                  key: Key('ai_chat_message_theme_$index'),
+                  data: theme.copyWith(
+                    textSelectionTheme: TextSelectionThemeData(
+                      selectionColor: isUser
+                          ? colorScheme.onPrimary.withValues(alpha: 0.3)
+                          : colorScheme.primary.withValues(alpha: 0.3),
+                      selectionHandleColor: isUser ? colorScheme.onPrimary : colorScheme.primary,
+                    ),
+                  ),
+                  child: MarkdownContent(
+                    key: Key('ai_chat_message_markdown_$index'),
+                    content: message.text,
+                    fontSize: 15,
+                    textColor: textColor,
+                  ),
+                ),
         ),
       ),
     );
@@ -582,6 +591,12 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
     try {
       await quiz.startAiChat(text);
+      final settings = context.read<SettingsProvider>();
+      if (settings.aiChatScrollToBottom) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToBottom();
+        });
+      }
     } catch (e) {
       if (mounted) {
         ToastUtils.showToast(context, e.toString().replaceAll("Exception: ", ""));

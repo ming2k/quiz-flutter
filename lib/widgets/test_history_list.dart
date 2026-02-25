@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
 import '../theme/app_theme.dart';
+import '../l10n/app_localizations.dart';
 
 class TestHistoryList extends StatefulWidget {
   const TestHistoryList({super.key});
@@ -38,7 +39,7 @@ class _TestHistoryListState extends State<TestHistoryList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('考试历史'),
+        title: Text(AppLocalizations.of(context).testHistory),
         actions: [
           if (_entries.isNotEmpty)
             IconButton(
@@ -50,13 +51,13 @@ class _TestHistoryListState extends State<TestHistoryList> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _entries.isEmpty
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text('暂无历史记录', style: TextStyle(color: Colors.grey)),
+                      const Icon(Icons.history, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(AppLocalizations.of(context).noTestHistory, style: const TextStyle(color: Colors.grey)),
                     ],
                   ),
                 )
@@ -138,17 +139,17 @@ class _TestHistoryListState extends State<TestHistoryList> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildMiniStat(
-                        '总题',
+                        AppLocalizations.of(context).totalShort,
                         entry.totalQuestions.toString(),
                         colorScheme.primary,
                       ),
                       _buildMiniStat(
-                        '正确',
+                        AppLocalizations.of(context).correctShort,
                         entry.correctCount.toString(),
                         passColor,
                       ),
                       _buildMiniStat(
-                        '错误',
+                        AppLocalizations.of(context).wrongShort,
                         entry.wrongCount.toString(),
                         failColor,
                       ),
@@ -185,15 +186,16 @@ class _TestHistoryListState extends State<TestHistoryList> {
 
   void _confirmClear() {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('清除历史'),
-        content: const Text('确定要清除所有考试历史记录吗？'),
+        title: Text(l10n.clearHistory),
+        content: Text(l10n.clearHistoryConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -207,7 +209,7 @@ class _TestHistoryListState extends State<TestHistoryList> {
               backgroundColor: colorScheme.error,
               foregroundColor: colorScheme.onError,
             ),
-            child: const Text('清除'),
+            child: Text(l10n.clear),
           ),
         ],
       ),

@@ -6,6 +6,8 @@ import '../theme/app_theme.dart';
 import '../widgets/stats_display.dart';
 import 'bottom_sheet_handle.dart';
 
+enum _OverviewFilter { all, correct, wrong, marked, unanswered }
+
 class OverviewSheet extends StatefulWidget {
   const OverviewSheet({super.key});
 
@@ -15,6 +17,7 @@ class OverviewSheet extends StatefulWidget {
 
 class _OverviewSheetState extends State<OverviewSheet> {
   ScrollController? _scrollController;
+  _OverviewFilter _filter = _OverviewFilter.all;
 
   @override
   void didChangeDependencies() {
@@ -34,15 +37,11 @@ class _OverviewSheetState extends State<OverviewSheet> {
           (padding * 2) -
           ((crossAxisCount - 1) * crossAxisSpacing);
       final double itemWidth = availableWidth / crossAxisCount;
-      // Aspect ratio 1.0 means height = width
       final double itemHeight = itemWidth;
 
       final int row = currentIndex ~/ crossAxisCount;
       final double offset = row * (itemHeight + mainAxisSpacing);
 
-      // Scroll with a bit of offset to show context if possible
-      // We can't clamp to maxScrollExtent here easily because we don't know the content size yet,
-      // but ScrollController handles out of bounds reasonably well (or we can clamp to 0.0 minimum).
       final double targetOffset = (offset - 100).clamp(0.0, double.infinity);
 
       _scrollController = ScrollController(initialScrollOffset: targetOffset);
@@ -67,12 +66,15 @@ class _OverviewSheetState extends State<OverviewSheet> {
       child: SafeArea(
         child: Consumer<QuizProvider>(
           builder: (context, quiz, child) {
+            // Build filtered index list
+            final filteredIndices = _buildFilteredIndices(quiz);
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Drag Handle
                 const BottomSheetHandle(),
-                
+
                 // Title
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8.0),
@@ -81,7 +83,27 @@ class _OverviewSheetState extends State<OverviewSheet> {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                const SizedBox(height: 16),
+
+                // Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      _buildFilterChip(context, l10n.all, _OverviewFilter.all, quiz),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(context, l10n.correct, _OverviewFilter.correct, quiz),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(context, l10n.wrong, _OverviewFilter.wrong, quiz),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(context, l10n.marked, _OverviewFilter.marked, quiz),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(context, l10n.unanswered, _OverviewFilter.unanswered, quiz),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
 
                 // Question Grid
                 Flexible(
@@ -89,54 +111,65 @@ class _OverviewSheetState extends State<OverviewSheet> {
                     constraints: BoxConstraints(
                       maxHeight: MediaQuery.of(context).size.height * 0.6,
                     ),
-                    child: GridView.builder(
-                      controller: _scrollController!,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 6,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemCount: quiz.totalQuestions,
-                      itemBuilder: (context, index) {
-                        final status = quiz.getQuestionStatus(index);
-                        final isCurrentQuestion = index == quiz.currentIndex;
-                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                    child: filteredIndices.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Text(
+                              '-',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          )
+                        : GridView.builder(
+                            controller: _scrollController!,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: filteredIndices.length,
+                            itemBuilder: (context, i) {
+                              final index = filteredIndices[i];
+                              final status = quiz.getQuestionStatus(index);
+                              final isCurrentQuestion = index == quiz.currentIndex;
+                              final colorScheme = Theme.of(context).colorScheme;
 
-                        return GestureDetector(
-                          onTap: () {
-                            quiz.goToQuestion(index);
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(context, status),
-                              borderRadius: BorderRadius.circular(8),
-                              border: isCurrentQuestion
-                                  ? Border.all(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      width: 3,
-                                    )
-                                  : Border.all(
-                                      color: isDark ? Colors.white10 : Colors.black12,
-                                      width: 1,
+                              return GestureDetector(
+                                onTap: () {
+                                  Navigator.pop(context);
+                                  quiz.goToQuestion(index);
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: _getStatusColor(context, status),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: isCurrentQuestion
+                                        ? Border.all(
+                                            color: colorScheme.primary,
+                                            width: 3,
+                                          )
+                                        : Border.all(
+                                            color: colorScheme.outlineVariant,
+                                            width: 1,
+                                          ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${index + 1}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: status == QuestionStatus.unanswered
+                                            ? colorScheme.onSurfaceVariant
+                                            : Colors.white,
+                                      ),
                                     ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${index + 1}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: status == QuestionStatus.unanswered
-                                      ? (isDark ? Colors.white70 : Colors.black54)
-                                      : Colors.white,
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ),
 
@@ -162,11 +195,46 @@ class _OverviewSheetState extends State<OverviewSheet> {
     );
   }
 
+  List<int> _buildFilteredIndices(QuizProvider quiz) {
+    final total = quiz.totalQuestions;
+    final indices = <int>[];
+    for (int i = 0; i < total; i++) {
+      final status = quiz.getQuestionStatus(i);
+      final include = switch (_filter) {
+        _OverviewFilter.all => true,
+        _OverviewFilter.correct => status == QuestionStatus.correct,
+        _OverviewFilter.wrong => status == QuestionStatus.wrong,
+        _OverviewFilter.marked => status == QuestionStatus.marked,
+        _OverviewFilter.unanswered => status == QuestionStatus.unanswered,
+      };
+      if (include) indices.add(i);
+    }
+    return indices;
+  }
+
+  Widget _buildFilterChip(
+    BuildContext context,
+    String label,
+    _OverviewFilter filter,
+    QuizProvider quiz,
+  ) {
+    final isSelected = _filter == filter;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) {
+        setState(() {
+          _filter = filter;
+        });
+      },
+      showCheckmark: false,
+    );
+  }
+
   Color _getStatusColor(BuildContext context, QuestionStatus status) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (status) {
       case QuestionStatus.unanswered:
-        return isDark ? const Color(0xFF2C2C2C) : Colors.grey.shade200;
+        return Theme.of(context).colorScheme.surfaceContainerHighest;
       case QuestionStatus.correct:
         return AppTheme.success;
       case QuestionStatus.wrong:

@@ -1,0 +1,153 @@
+{
+  "@@locale": "zh",
+
+  "appTitle": "Quiz",
+  "appSubtitle": "通用扩展题库练习系统",
+
+  "selectQuestionBank": "选择题库",
+  "selectMode": "选择模式",
+  "startPractice": "开始练习",
+  "exit": "退出",
+
+  "practiceMode": "练习模式",
+  "practiceModeDesc": "逐题练习，即时反馈",
+  "reviewMode": "复习模式",
+  "reviewModeDesc": "复习错题和标记题目",
+  "memorizeMode": "背题模式",
+  "memorizeModeDesc": "直接显示答案和解析",
+  "testMode": "模拟考试",
+  "testModeDesc": "随机抽题，计时考试",
+
+  "question": "题目",
+  "questionOf": "/",
+  "correct": "正确",
+  "wrong": "错误",
+  "accuracy": "正确率",
+  "mark": "标记",
+  "unmark": "取消标记",
+  "previous": "上一题",
+  "next": "下一题",
+  "submit": "提交",
+  "reset": "重置",
+  "showAnalysis": "显示解析",
+  "hideAnalysis": "隐藏解析",
+  "analysis": "解析",
+  "aiExplain": "AI 解析",
+
+  "overview": "题目概览",
+  "all": "全部",
+  "unanswered": "未答",
+  "answered": "已答",
+  "marked": "已标记",
+
+  "testQuestionCount": "考试题数",
+  "startTest": "开始考试",
+  "finishTest": "交卷",
+  "testResult": "考试结果",
+  "totalQuestions": "总题数",
+  "correctCount": "答对",
+  "wrongCount": "答错",
+  "unansweredCount": "未答",
+  "timeTaken": "用时",
+  "backToHome": "返回首页",
+  "viewHistory": "查看历史",
+
+  "settings": "设置",
+  "appearance": "外观",
+  "theme": "主题",
+  "themeSystem": "跟随系统",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "language": "语言",
+  "quizExperience": "练习体验",
+  "autoAdvance": "自动下一题",
+  "autoAdvanceDesc": "答对后自动跳转下一题",
+  "showAnalysisOption": "显示解析",
+  "showAnalysisOptionDesc": "答题后显示解析",
+  "soundEffects": "音效",
+  "soundEffectsDesc": "答题时播放音效",
+  "hapticFeedback": "振动反馈",
+  "hapticFeedbackDesc": "答题时振动提示",
+  "confettiEffect": "彩带效果",
+  "confettiEffectDesc": "答对时显示彩带动画",
+  "aiSettings": "AI 设置",
+  "aiProvider": "AI 服务商",
+  "aiApiKey": "API 密钥",
+  "aiModel": "模型",
+  "aiChatScrollToBottom": "发送后滚动到底部",
+  "aiChatScrollToBottomDesc": "发送消息后自动滚动至最新内容",
+
+  "allSections": "全部章节",
+  "section": "章节",
+  "questions": "题",
+
+  "history": "历史记录",
+  "noHistory": "暂无历史记录",
+  "clearHistory": "清除历史",
+
+  "loading": "加载中...",
+  "error": "错误",
+  "retry": "重试",
+  "cancel": "取消",
+  "confirm": "确认",
+  "save": "保存",
+  "delete": "删除",
+  "ok": "确定",
+  "clear": "清除",
+
+  "importPackage": "导入题包",
+  "importFailed": "导入失败",
+  "importSuccess": "成功导入\"{packageName}\"",
+  "@importSuccess": {
+    "placeholders": {
+      "packageName": { "type": "String" }
+    }
+  },
+  "confirmDeleteBook": "确定要删除\"{bookName}\"吗？",
+  "@confirmDeleteBook": {
+    "placeholders": {
+      "bookName": { "type": "String" }
+    }
+  },
+
+  "aiKeyNotSet": "未设置",
+  "aiBaseUrl": "AI 基础 URL",
+  "aiBaseUrlDefault": "默认",
+  "aiBaseUrlHint": "https://generativelanguage.googleapis.com",
+  "aiBaseUrlHelper": "留空使用默认地址",
+  "enterApiKey": "请输入 API 密钥",
+  "textSelectionMenu": "文本选择菜单",
+  "menuItemOrder": "菜单项排序",
+  "reorderMenuItems": "调整菜单顺序",
+
+  "confirmExitTest": "确定要结束考试吗？",
+  "resetProgress": "重置进度",
+  "confirmResetProgress": "确定要重置当前题库的所有进度吗？此操作不可撤销。",
+  "doReset": "重置",
+
+  "aiChatTitle": "AI 解析",
+  "chatHistory": "历史记录",
+  "newChat": "新对话",
+  "chatInputHint": "输入问题...",
+  "startConversation": "开始与 AI 对话",
+  "noChatHistory": "暂无记录",
+  "deleteChat": "删除对话？",
+  "confirmDeleteChat": "确定要删除\"{title}\"吗？",
+  "@confirmDeleteChat": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "aiSuggestion1": "详细解析本题",
+  "aiSuggestion2": "为什么其他选项是错误的？",
+  "aiSuggestion3": "这道题考察的知识点是什么？",
+  "aiSuggestion4": "用更简单的话解释",
+  "aiSuggestion5": "帮我翻译成中文",
+
+  "testHistory": "考试历史",
+  "noTestHistory": "暂无历史记录",
+  "clearHistoryConfirm": "确定要清除所有考试历史记录吗？",
+  "totalShort": "总题",
+  "correctShort": "正确",
+  "wrongShort": "错误"
+}

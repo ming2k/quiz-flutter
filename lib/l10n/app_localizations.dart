@@ -1,9 +1,71 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-class AppLocalizations {
-  final Locale locale;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
 
-  AppLocalizations(this.locale);
+import 'app_localizations_en.dart';
+import 'app_localizations_zh.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
+abstract class AppLocalizations {
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
@@ -12,229 +74,749 @@ class AppLocalizations {
   static const LocalizationsDelegate<AppLocalizations> delegate =
       _AppLocalizationsDelegate();
 
-  static final Map<String, Map<String, String>> _localizedValues = {
-    'zh': {
-      // App
-      'appTitle': 'Quiz',
-      'appSubtitle': '通用扩展题库练习系统',
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
-      // Home
-      'selectQuestionBank': '选择题库',
-      'selectMode': '选择模式',
-      'startPractice': '开始练习',
-      'exit': '退出',
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
+    Locale('zh'),
+  ];
 
-      // Modes
-      'practiceMode': '练习模式',
-      'practiceModeDesc': '逐题练习，即时反馈',
-      'reviewMode': '复习模式',
-      'reviewModeDesc': '复习错题和标记题目',
-      'memorizeMode': '背题模式',
-      'memorizeModeDesc': '直接显示答案和解析',
-      'testMode': '模拟考试',
-      'testModeDesc': '随机抽题，计时考试',
+  /// No description provided for @appTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz'**
+  String get appTitle;
 
-      // Quiz
-      'question': '题目',
-      'of': '/',
-      'correct': '正确',
-      'wrong': '错误',
-      'accuracy': '正确率',
-      'mark': '标记',
-      'unmark': '取消标记',
-      'previous': '上一题',
-      'next': '下一题',
-      'submit': '提交',
-      'reset': '重置',
-      'showAnalysis': '显示解析',
-      'hideAnalysis': '隐藏解析',
-      'analysis': '解析',
-      'aiExplain': 'AI 解析',
+  /// No description provided for @appSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General Extensible Quiz Framework'**
+  String get appSubtitle;
 
-      // Overview
-      'overview': '题目概览',
-      'unanswered': '未答',
-      'answered': '已答',
-      'marked': '已标记',
+  /// No description provided for @selectQuestionBank.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Question Bank'**
+  String get selectQuestionBank;
 
-      // Test
-      'testQuestionCount': '考试题数',
-      'startTest': '开始考试',
-      'finishTest': '交卷',
-      'testResult': '考试结果',
-      'totalQuestions': '总题数',
-      'correctCount': '答对',
-      'wrongCount': '答错',
-      'unansweredCount': '未答',
-      'timeTaken': '用时',
-      'backToHome': '返回首页',
-      'viewHistory': '查看历史',
+  /// No description provided for @selectMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Mode'**
+  String get selectMode;
 
-      // Settings
-      'settings': '设置',
-      'appearance': '外观',
-      'theme': '主题',
-      'themeSystem': '跟随系统',
-      'themeLight': '浅色',
-      'themeDark': '深色',
-      'language': '语言',
-      'quizExperience': '练习体验',
-      'autoAdvance': '自动下一题',
-      'autoAdvanceDesc': '答对后自动跳转下一题',
-      'showAnalysisOption': '显示解析',
-      'showAnalysisOptionDesc': '答题后显示解析',
-      'soundEffects': '音效',
-      'soundEffectsDesc': '答题时播放音效',
-      'hapticFeedback': '振动反馈',
-      'hapticFeedbackDesc': '答题时振动提示',
-      'confettiEffect': '彩带效果',
-      'confettiEffectDesc': '答对时显示彩带动画',
-      'aiSettings': 'AI 设置',
-      'aiProvider': 'AI 服务商',
-      'aiApiKey': 'API 密钥',
-      'aiModel': '模型',
+  /// No description provided for @startPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Practice'**
+  String get startPractice;
 
-      // Sections
-      'allSections': '全部章节',
-      'section': '章节',
-      'questions': '题',
+  /// No description provided for @exit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get exit;
 
-      // History
-      'history': '历史记录',
-      'noHistory': '暂无历史记录',
-      'clearHistory': '清除历史',
+  /// No description provided for @practiceMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice'**
+  String get practiceMode;
 
-      // Common
-      'loading': '加载中...',
-      'error': '错误',
-      'retry': '重试',
-      'cancel': '取消',
-      'confirm': '确认',
-      'save': '保存',
-      'delete': '删除',
-    },
-    'en': {
-      // App
-      'appTitle': 'Quiz',
-      'appSubtitle': 'General Extensible Quiz Framework',
+  /// No description provided for @practiceModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice questions with instant feedback'**
+  String get practiceModeDesc;
 
-      // Home
-      'selectQuestionBank': 'Select Question Bank',
-      'selectMode': 'Select Mode',
-      'startPractice': 'Start Practice',
-      'exit': 'Exit',
+  /// No description provided for @reviewMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get reviewMode;
 
-      // Modes
-      'practiceMode': 'Practice',
-      'practiceModeDesc': 'Practice questions with instant feedback',
-      'reviewMode': 'Review',
-      'reviewModeDesc': 'Review wrong and marked questions',
-      'memorizeMode': 'Memorize',
-      'memorizeModeDesc': 'Show answers directly',
-      'testMode': 'Mock Test',
-      'testModeDesc': 'Timed test with random questions',
+  /// No description provided for @reviewModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Review wrong and marked questions'**
+  String get reviewModeDesc;
 
-      // Quiz
-      'question': 'Question',
-      'of': '/',
-      'correct': 'Correct',
-      'wrong': 'Wrong',
-      'accuracy': 'Accuracy',
-      'mark': 'Mark',
-      'unmark': 'Unmark',
-      'previous': 'Previous',
-      'next': 'Next',
-      'submit': 'Submit',
-      'reset': 'Reset',
-      'showAnalysis': 'Show Analysis',
-      'hideAnalysis': 'Hide Analysis',
-      'analysis': 'Analysis',
-      'aiExplain': 'AI Explain',
+  /// No description provided for @memorizeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Memorize'**
+  String get memorizeMode;
 
-      // Overview
-      'overview': 'Overview',
-      'unanswered': 'Unanswered',
-      'answered': 'Answered',
-      'marked': 'Marked',
+  /// No description provided for @memorizeModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show answers directly'**
+  String get memorizeModeDesc;
 
-      // Test
-      'testQuestionCount': 'Question Count',
-      'startTest': 'Start Test',
-      'finishTest': 'Finish',
-      'testResult': 'Test Result',
-      'totalQuestions': 'Total',
-      'correctCount': 'Correct',
-      'wrongCount': 'Wrong',
-      'unansweredCount': 'Unanswered',
-      'timeTaken': 'Time',
-      'backToHome': 'Back to Home',
-      'viewHistory': 'View History',
+  /// No description provided for @testMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Mock Test'**
+  String get testMode;
 
-      // Settings
-      'settings': 'Settings',
-      'appearance': 'Appearance',
-      'theme': 'Theme',
-      'themeSystem': 'System',
-      'themeLight': 'Light',
-      'themeDark': 'Dark',
-      'language': 'Language',
-      'quizExperience': 'Quiz Experience',
-      'autoAdvance': 'Auto Advance',
-      'autoAdvanceDesc': 'Auto advance after correct answer',
-      'showAnalysisOption': 'Show Analysis',
-      'showAnalysisOptionDesc': 'Show analysis after answering',
-      'soundEffects': 'Sound Effects',
-      'soundEffectsDesc': 'Play sounds on answer',
-      'hapticFeedback': 'Haptic Feedback',
-      'hapticFeedbackDesc': 'Vibrate on answer',
-      'confettiEffect': 'Confetti Effect',
-      'confettiEffectDesc': 'Show confetti on correct answer',
-      'aiSettings': 'AI Settings',
-      'aiProvider': 'AI Provider',
-      'aiApiKey': 'API Key',
-      'aiModel': 'Model',
+  /// No description provided for @testModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed test with random questions'**
+  String get testModeDesc;
 
-      // Sections
-      'allSections': 'All Sections',
-      'section': 'Section',
-      'questions': 'questions',
+  /// No description provided for @question.
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get question;
 
-      // History
-      'history': 'History',
-      'noHistory': 'No history yet',
-      'clearHistory': 'Clear History',
+  /// No description provided for @questionOf.
+  ///
+  /// In en, this message translates to:
+  /// **'/'**
+  String get questionOf;
 
-      // Common
-      'loading': 'Loading...',
-      'error': 'Error',
-      'retry': 'Retry',
-      'cancel': 'Cancel',
-      'confirm': 'Confirm',
-      'save': 'Save',
-      'delete': 'Delete',
-    },
-  };
+  /// No description provided for @correct.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get correct;
 
-  String get(String key) {
-    final langCode = locale.languageCode;
-    return _localizedValues[langCode]?[key] ??
-        _localizedValues['en']?[key] ??
-        key;
-  }
+  /// No description provided for @wrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong'**
+  String get wrong;
 
-  // Convenience getters for common strings
-  String get appTitle => get('appTitle');
-  String get appSubtitle => get('appSubtitle');
-  String get selectQuestionBank => get('selectQuestionBank');
-  String get selectMode => get('selectMode');
-  String get startPractice => get('startPractice');
-  String get practiceMode => get('practiceMode');
-  String get reviewMode => get('reviewMode');
-  String get memorizeMode => get('memorizeMode');
-  String get testMode => get('testMode');
-  String get settings => get('settings');
-  String get overview => get('overview');
-  String get history => get('history');
+  /// No description provided for @accuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get accuracy;
+
+  /// No description provided for @mark.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark'**
+  String get mark;
+
+  /// No description provided for @unmark.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmark'**
+  String get unmark;
+
+  /// No description provided for @previous.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get previous;
+
+  /// No description provided for @next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get next;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// No description provided for @showAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Analysis'**
+  String get showAnalysis;
+
+  /// No description provided for @hideAnalysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Analysis'**
+  String get hideAnalysis;
+
+  /// No description provided for @analysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis'**
+  String get analysis;
+
+  /// No description provided for @aiExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Explain'**
+  String get aiExplain;
+
+  /// No description provided for @overview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get overview;
+
+  /// No description provided for @all.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get all;
+
+  /// No description provided for @unanswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Unanswered'**
+  String get unanswered;
+
+  /// No description provided for @answered.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered'**
+  String get answered;
+
+  /// No description provided for @marked.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked'**
+  String get marked;
+
+  /// No description provided for @testQuestionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Question Count'**
+  String get testQuestionCount;
+
+  /// No description provided for @startTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Test'**
+  String get startTest;
+
+  /// No description provided for @finishTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish'**
+  String get finishTest;
+
+  /// No description provided for @testResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Result'**
+  String get testResult;
+
+  /// No description provided for @totalQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalQuestions;
+
+  /// No description provided for @correctCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get correctCount;
+
+  /// No description provided for @wrongCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong'**
+  String get wrongCount;
+
+  /// No description provided for @unansweredCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Unanswered'**
+  String get unansweredCount;
+
+  /// No description provided for @timeTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get timeTaken;
+
+  /// No description provided for @backToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Home'**
+  String get backToHome;
+
+  /// No description provided for @viewHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'View History'**
+  String get viewHistory;
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @appearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get appearance;
+
+  /// No description provided for @theme.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @quizExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz Experience'**
+  String get quizExperience;
+
+  /// No description provided for @autoAdvance.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Advance'**
+  String get autoAdvance;
+
+  /// No description provided for @autoAdvanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto advance after correct answer'**
+  String get autoAdvanceDesc;
+
+  /// No description provided for @showAnalysisOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Analysis'**
+  String get showAnalysisOption;
+
+  /// No description provided for @showAnalysisOptionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show analysis after answering'**
+  String get showAnalysisOptionDesc;
+
+  /// No description provided for @soundEffects.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound Effects'**
+  String get soundEffects;
+
+  /// No description provided for @soundEffectsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Play sounds on answer'**
+  String get soundEffectsDesc;
+
+  /// No description provided for @hapticFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Haptic Feedback'**
+  String get hapticFeedback;
+
+  /// No description provided for @hapticFeedbackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Vibrate on answer'**
+  String get hapticFeedbackDesc;
+
+  /// No description provided for @confettiEffect.
+  ///
+  /// In en, this message translates to:
+  /// **'Confetti Effect'**
+  String get confettiEffect;
+
+  /// No description provided for @confettiEffectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show confetti on correct answer'**
+  String get confettiEffectDesc;
+
+  /// No description provided for @aiSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Settings'**
+  String get aiSettings;
+
+  /// No description provided for @aiProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Provider'**
+  String get aiProvider;
+
+  /// No description provided for @aiApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API Key'**
+  String get aiApiKey;
+
+  /// No description provided for @aiModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get aiModel;
+
+  /// No description provided for @aiChatScrollToBottom.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll to Bottom on Send'**
+  String get aiChatScrollToBottom;
+
+  /// No description provided for @aiChatScrollToBottomDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically scroll to latest content after sending a message'**
+  String get aiChatScrollToBottomDesc;
+
+  /// No description provided for @allSections.
+  ///
+  /// In en, this message translates to:
+  /// **'All Sections'**
+  String get allSections;
+
+  /// No description provided for @section.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get section;
+
+  /// No description provided for @questions.
+  ///
+  /// In en, this message translates to:
+  /// **'questions'**
+  String get questions;
+
+  /// No description provided for @history.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get history;
+
+  /// No description provided for @noHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get noHistory;
+
+  /// No description provided for @clearHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear History'**
+  String get clearHistory;
+
+  /// No description provided for @loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get loading;
+
+  /// No description provided for @error.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get error;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @clear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No description provided for @importPackage.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Package'**
+  String get importPackage;
+
+  /// No description provided for @importFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Failed'**
+  String get importFailed;
+
+  /// No description provided for @importSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Successfully imported \"{packageName}\"'**
+  String importSuccess(String packageName);
+
+  /// No description provided for @confirmDeleteBook.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{bookName}\"?'**
+  String confirmDeleteBook(String bookName);
+
+  /// No description provided for @aiKeyNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get aiKeyNotSet;
+
+  /// No description provided for @aiBaseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Base URL'**
+  String get aiBaseUrl;
+
+  /// No description provided for @aiBaseUrlDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get aiBaseUrlDefault;
+
+  /// No description provided for @aiBaseUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://generativelanguage.googleapis.com'**
+  String get aiBaseUrlHint;
+
+  /// No description provided for @aiBaseUrlHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty for default'**
+  String get aiBaseUrlHelper;
+
+  /// No description provided for @enterApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your API key'**
+  String get enterApiKey;
+
+  /// No description provided for @textSelectionMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Text Selection Menu'**
+  String get textSelectionMenu;
+
+  /// No description provided for @menuItemOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu Item Order'**
+  String get menuItemOrder;
+
+  /// No description provided for @reorderMenuItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder Menu Items'**
+  String get reorderMenuItems;
+
+  /// No description provided for @confirmExitTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to finish the test?'**
+  String get confirmExitTest;
+
+  /// No description provided for @resetProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Progress'**
+  String get resetProgress;
+
+  /// No description provided for @confirmResetProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to reset all progress? This cannot be undone.'**
+  String get confirmResetProgress;
+
+  /// No description provided for @doReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get doReset;
+
+  /// No description provided for @aiChatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Analysis'**
+  String get aiChatTitle;
+
+  /// No description provided for @chatHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat History'**
+  String get chatHistory;
+
+  /// No description provided for @newChat.
+  ///
+  /// In en, this message translates to:
+  /// **'New Chat'**
+  String get newChat;
+
+  /// No description provided for @chatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a question...'**
+  String get chatInputHint;
+
+  /// No description provided for @startConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation with AI'**
+  String get startConversation;
+
+  /// No description provided for @noChatHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No records'**
+  String get noChatHistory;
+
+  /// No description provided for @deleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete conversation?'**
+  String get deleteChat;
+
+  /// No description provided for @confirmDeleteChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete \"{title}\"?'**
+  String confirmDeleteChat(String title);
+
+  /// No description provided for @aiSuggestion1.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain this question in detail'**
+  String get aiSuggestion1;
+
+  /// No description provided for @aiSuggestion2.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are the other options wrong?'**
+  String get aiSuggestion2;
+
+  /// No description provided for @aiSuggestion3.
+  ///
+  /// In en, this message translates to:
+  /// **'What knowledge does this question test?'**
+  String get aiSuggestion3;
+
+  /// No description provided for @aiSuggestion4.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain in simpler terms'**
+  String get aiSuggestion4;
+
+  /// No description provided for @aiSuggestion5.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate to Chinese'**
+  String get aiSuggestion5;
+
+  /// No description provided for @testHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Test History'**
+  String get testHistory;
+
+  /// No description provided for @noTestHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No test history'**
+  String get noTestHistory;
+
+  /// No description provided for @clearHistoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to clear all test history?'**
+  String get clearHistoryConfirm;
+
+  /// No description provided for @totalShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalShort;
+
+  /// No description provided for @correctShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get correctShort;
+
+  /// No description provided for @wrongShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong'**
+  String get wrongShort;
 }
 
 class _AppLocalizationsDelegate
@@ -242,15 +824,31 @@ class _AppLocalizationsDelegate
   const _AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) {
-    return ['en', 'zh'].contains(locale.languageCode);
+  Future<AppLocalizations> load(Locale locale) {
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
   }
 
   @override
-  Future<AppLocalizations> load(Locale locale) async {
-    return AppLocalizations(locale);
-  }
+  bool isSupported(Locale locale) =>
+      <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
+    case 'zh':
+      return AppLocalizationsZh();
+  }
+
+  throw FlutterError(
+    'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
 }

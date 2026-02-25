@@ -18,12 +18,13 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   late PageController _pageController;
+  late QuizProvider _quiz;
   final SoundService _soundService = SoundService();
   final HapticService _hapticService = HapticService();
-  
+
   // Local state to track selection before confirmation/animation
   String? _selectedOption;
-  
+
   // Track if we are currently animating the page
   bool _isAnimatingPage = false;
 
@@ -38,13 +39,28 @@ class _QuizScreenState extends State<QuizScreen> {
     super.initState();
     _soundService.init();
     _hapticService.init();
-    
-    final quiz = context.read<QuizProvider>();
-    _pageController = PageController(initialPage: quiz.currentIndex);
+
+    _quiz = context.read<QuizProvider>();
+    _pageController = PageController(initialPage: _quiz.currentIndex);
+    _quiz.addListener(_syncPageController);
+  }
+
+  void _syncPageController() {
+    if (!mounted || !_pageController.hasClients) return;
+    final currentPage = _pageController.page?.round() ?? 0;
+    if (currentPage != _quiz.currentIndex) {
+      _isAnimatingPage = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pageController.hasClients) {
+          _pageController.jumpToPage(_quiz.currentIndex);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _quiz.removeListener(_syncPageController);
     _pageController.dispose();
     super.dispose();
   }
@@ -53,14 +69,7 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final quiz = context.watch<QuizProvider>();
-
-    // Sync PageController with QuizProvider index if changed externally (e.g. Overview)
-    if (_pageController.hasClients && !_isAnimatingPage) {
-      final currentPage = _pageController.page?.round() ?? 0;
-      if (currentPage != quiz.currentIndex) {
-        _pageController.jumpToPage(quiz.currentIndex);
-      }
-    }
+    final settings = context.watch<SettingsProvider>();
 
     return Scaffold(
       key: const Key('quiz_scaffold'),
@@ -107,11 +116,10 @@ class _QuizScreenState extends State<QuizScreen> {
                           parent: AlwaysScrollableScrollPhysics(),
                         ),
                         onPageChanged: (index) {
-                          if (!_isAnimatingPage) {
-                            quiz.goToQuestion(index);
-                            setState(() {
-                              _selectedOption = null;
-                            });
+                          if (_isAnimatingPage) return;
+                          setState(() { _selectedOption = null; });
+                          if (index != _quiz.currentIndex) {
+                            _quiz.goToQuestion(index);
                           }
                         },
                         itemBuilder: (context, index) {
@@ -123,7 +131,7 @@ class _QuizScreenState extends State<QuizScreen> {
                             key: ValueKey('question_$index'),
                             question: question,
                             selectedOption: isCurrent ? (_selectedOption ?? answer?.selected) : null,
-                            showAnswer: (isCurrent && answer != null) || quiz.appMode == AppMode.memorize,
+                            showAnswer: (isCurrent && answer != null) || settings.memorizeMode,
                             imageBasePath: quiz.currentPackageImagePath,
                             onOptionSelected: (isCurrent && answer != null)
                                 ? null
@@ -156,7 +164,7 @@ class _QuizScreenState extends State<QuizScreen> {
           Selector<QuizProvider, String>(
             key: const Key('quiz_title_selector'),
             selector: (_, provider) =>
-                provider.currentBook?.getDisplayName(l10n.locale.languageCode) ?? '',
+                provider.currentBook?.getDisplayName(l10n.localeName) ?? '',
             builder: (_, title, __) => Text(
               title, 
               key: const Key('quiz_title_text'),
@@ -198,7 +206,7 @@ class _QuizScreenState extends State<QuizScreen> {
               child: IconButton(
                 key: const Key('quiz_section_button'),
                 icon: const Icon(Icons.list_alt, key: Key('quiz_section_icon')),
-                tooltip: l10n.get('section'),
+                tooltip: l10n.section,
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
@@ -283,7 +291,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 children: [
                   const Icon(Icons.restart_alt, key: Key('menu_reset_icon'), size: 20, color: Colors.red),
                   const SizedBox(width: 8, key: Key('menu_reset_spacer')),
-                  Text(l10n.get('reset'),
+                  Text(l10n.reset,
                       key: const Key('menu_reset_text'),
                       style: const TextStyle(color: Colors.red)),
                 ],
@@ -326,7 +334,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     key: const Key('action_prev_button'),
                     onPressed: quiz.currentIndex > 0 ? () => _goToPage(quiz.currentIndex - 1) : null,
                     icon: const Icon(Icons.arrow_back),
-                    tooltip: l10n.get('previous'),
+                    tooltip: l10n.previous,
                   ),
                 ),
                 
@@ -337,7 +345,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     key: const Key('action_ai_button'),
                     icon: const Icon(Icons.auto_awesome),
                     onPressed: question != null ? () => _showAiPanel(question) : null,
-                    tooltip: 'AI Explain',
+                    tooltip: l10n.aiExplain,
                   ),
                 ),
 
@@ -353,7 +361,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
-                      child: Text(l10n.get('finishTest'), key: const Key('quiz_finish_text')),
+                      child: Text(l10n.finishTest, key: const Key('quiz_finish_text')),
                     ),
                   )
                 else
@@ -369,7 +377,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       color: quiz.isCurrentMarked ? Colors.orange : null,
                     ),
                     onPressed: question != null ? () => quiz.toggleMark(question.id) : null,
-                    tooltip: quiz.isCurrentMarked ? 'Unmark' : 'Mark',
+                    tooltip: quiz.isCurrentMarked ? l10n.unmark : l10n.mark,
                   ),
                 ),
 
@@ -385,7 +393,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         _selectedOption = null;
                       });
                     } : null,
-                    tooltip: 'Reset',
+                    tooltip: l10n.reset,
                   ),
                 ),
 
@@ -398,7 +406,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ? () => _goToPage(quiz.currentIndex + 1)
                         : null,
                     icon: const Icon(Icons.arrow_forward),
-                    tooltip: l10n.get('next'),
+                    tooltip: l10n.next,
                   ),
                 ),
               ],
@@ -534,13 +542,13 @@ class _QuizScreenState extends State<QuizScreen> {
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('exit_test_dialog'),
-        title: Text(l10n.get('finishTest'), key: const Key('exit_test_title')),
-        content: const Text('确定要结束考试吗？', key: Key('exit_test_content')),
+        title: Text(l10n.finishTest, key: const Key('exit_test_title')),
+        content: Text(l10n.confirmExitTest, key: const Key('exit_test_content')),
         actions: [
           TextButton(
             key: const Key('exit_test_cancel'),
             onPressed: () => Navigator.pop(context),
-            child: Text(l10n.get('cancel'), key: const Key('exit_test_cancel_text')),
+            child: Text(l10n.cancel, key: const Key('exit_test_cancel_text')),
           ),
           ElevatedButton(
             key: const Key('exit_test_confirm'),
@@ -548,7 +556,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Navigator.pop(context);
               _finishTest();
             },
-            child: Text(l10n.get('confirm'), key: const Key('exit_test_confirm_text')),
+            child: Text(l10n.confirm, key: const Key('exit_test_confirm_text')),
           ),
         ],
       ),
@@ -557,17 +565,18 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _showResetDialog() {
     final quiz = context.read<QuizProvider>();
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('reset_progress_dialog'),
-        title: const Text('重置进度', key: Key('reset_progress_title')),
-        content: const Text('确定要重置当前题库的所有进度吗？此操作不可撤销。', key: Key('reset_progress_content')),
+        title: Text(l10n.resetProgress, key: const Key('reset_progress_title')),
+        content: Text(l10n.confirmResetProgress, key: const Key('reset_progress_content')),
         actions: [
           TextButton(
             key: const Key('reset_progress_cancel'),
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消', key: Key('reset_progress_cancel_text')),
+            child: Text(l10n.cancel, key: const Key('reset_progress_cancel_text')),
           ),
           ElevatedButton(
             key: const Key('reset_progress_confirm'),
@@ -580,7 +589,7 @@ class _QuizScreenState extends State<QuizScreen> {
               backgroundColor: Colors.red,
               foregroundColor: Colors.white,
             ),
-            child: const Text('重置', key: Key('reset_progress_confirm_text')),
+            child: Text(l10n.doReset, key: const Key('reset_progress_confirm_text')),
           ),
         ],
       ),

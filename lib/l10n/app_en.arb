@@ -1,0 +1,153 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Quiz",
+  "appSubtitle": "General Extensible Quiz Framework",
+
+  "selectQuestionBank": "Select Question Bank",
+  "selectMode": "Select Mode",
+  "startPractice": "Start Practice",
+  "exit": "Exit",
+
+  "practiceMode": "Practice",
+  "practiceModeDesc": "Practice questions with instant feedback",
+  "reviewMode": "Review",
+  "reviewModeDesc": "Review wrong and marked questions",
+  "memorizeMode": "Memorize",
+  "memorizeModeDesc": "Show answers directly",
+  "testMode": "Mock Test",
+  "testModeDesc": "Timed test with random questions",
+
+  "question": "Question",
+  "questionOf": "/",
+  "correct": "Correct",
+  "wrong": "Wrong",
+  "accuracy": "Accuracy",
+  "mark": "Mark",
+  "unmark": "Unmark",
+  "previous": "Previous",
+  "next": "Next",
+  "submit": "Submit",
+  "reset": "Reset",
+  "showAnalysis": "Show Analysis",
+  "hideAnalysis": "Hide Analysis",
+  "analysis": "Analysis",
+  "aiExplain": "AI Explain",
+
+  "overview": "Overview",
+  "all": "All",
+  "unanswered": "Unanswered",
+  "answered": "Answered",
+  "marked": "Marked",
+
+  "testQuestionCount": "Question Count",
+  "startTest": "Start Test",
+  "finishTest": "Finish",
+  "testResult": "Test Result",
+  "totalQuestions": "Total",
+  "correctCount": "Correct",
+  "wrongCount": "Wrong",
+  "unansweredCount": "Unanswered",
+  "timeTaken": "Time",
+  "backToHome": "Back to Home",
+  "viewHistory": "View History",
+
+  "settings": "Settings",
+  "appearance": "Appearance",
+  "theme": "Theme",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "language": "Language",
+  "quizExperience": "Quiz Experience",
+  "autoAdvance": "Auto Advance",
+  "autoAdvanceDesc": "Auto advance after correct answer",
+  "showAnalysisOption": "Show Analysis",
+  "showAnalysisOptionDesc": "Show analysis after answering",
+  "soundEffects": "Sound Effects",
+  "soundEffectsDesc": "Play sounds on answer",
+  "hapticFeedback": "Haptic Feedback",
+  "hapticFeedbackDesc": "Vibrate on answer",
+  "confettiEffect": "Confetti Effect",
+  "confettiEffectDesc": "Show confetti on correct answer",
+  "aiSettings": "AI Settings",
+  "aiProvider": "AI Provider",
+  "aiApiKey": "API Key",
+  "aiModel": "Model",
+  "aiChatScrollToBottom": "Scroll to Bottom on Send",
+  "aiChatScrollToBottomDesc": "Automatically scroll to latest content after sending a message",
+
+  "allSections": "All Sections",
+  "section": "Section",
+  "questions": "questions",
+
+  "history": "History",
+  "noHistory": "No history yet",
+  "clearHistory": "Clear History",
+
+  "loading": "Loading...",
+  "error": "Error",
+  "retry": "Retry",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "save": "Save",
+  "delete": "Delete",
+  "ok": "OK",
+  "clear": "Clear",
+
+  "importPackage": "Import Package",
+  "importFailed": "Import Failed",
+  "importSuccess": "Successfully imported \"{packageName}\"",
+  "@importSuccess": {
+    "placeholders": {
+      "packageName": { "type": "String" }
+    }
+  },
+  "confirmDeleteBook": "Are you sure you want to delete \"{bookName}\"?",
+  "@confirmDeleteBook": {
+    "placeholders": {
+      "bookName": { "type": "String" }
+    }
+  },
+
+  "aiKeyNotSet": "Not set",
+  "aiBaseUrl": "AI Base URL",
+  "aiBaseUrlDefault": "Default",
+  "aiBaseUrlHint": "https://generativelanguage.googleapis.com",
+  "aiBaseUrlHelper": "Leave empty for default",
+  "enterApiKey": "Enter your API key",
+  "textSelectionMenu": "Text Selection Menu",
+  "menuItemOrder": "Menu Item Order",
+  "reorderMenuItems": "Reorder Menu Items",
+
+  "confirmExitTest": "Are you sure you want to finish the test?",
+  "resetProgress": "Reset Progress",
+  "confirmResetProgress": "Are you sure you want to reset all progress? This cannot be undone.",
+  "doReset": "Reset",
+
+  "aiChatTitle": "AI Analysis",
+  "chatHistory": "Chat History",
+  "newChat": "New Chat",
+  "chatInputHint": "Ask a question...",
+  "startConversation": "Start a conversation with AI",
+  "noChatHistory": "No records",
+  "deleteChat": "Delete conversation?",
+  "confirmDeleteChat": "Are you sure you want to delete \"{title}\"?",
+  "@confirmDeleteChat": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "aiSuggestion1": "Explain this question in detail",
+  "aiSuggestion2": "Why are the other options wrong?",
+  "aiSuggestion3": "What knowledge does this question test?",
+  "aiSuggestion4": "Explain in simpler terms",
+  "aiSuggestion5": "Translate to Chinese",
+
+  "testHistory": "Test History",
+  "noTestHistory": "No test history",
+  "clearHistoryConfirm": "Are you sure you want to clear all test history?",
+  "totalShort": "Total",
+  "correctShort": "Correct",
+  "wrongShort": "Wrong"
+}

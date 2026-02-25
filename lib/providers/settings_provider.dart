@@ -11,6 +11,7 @@ class SettingsProvider extends ChangeNotifier {
 
   // Quiz Experience
   AppMode _lastAppMode = AppMode.practice;
+  bool _memorizeMode = false;
   bool _autoAdvance = true;
   bool _showAnalysis = true;
   bool _showNotes = true;
@@ -22,6 +23,7 @@ class SettingsProvider extends ChangeNotifier {
   int _testQuestionCount = 50;
 
   // AI Settings
+  bool _aiChatScrollToBottom = true;
   String _aiProvider = 'gemini';
   String _aiApiKey = '';
   String _aiBaseUrl = '';
@@ -42,6 +44,7 @@ class SettingsProvider extends ChangeNotifier {
   AppMode get lastAppMode => _lastAppMode;
   ThemeMode get themeMode => _themeMode;
   String get locale => _locale;
+  bool get memorizeMode => _memorizeMode;
   bool get autoAdvance => _autoAdvance;
   bool get showAnalysis => _showAnalysis;
   bool get showNotes => _showNotes;
@@ -49,6 +52,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get hapticFeedback => _hapticFeedback;
   bool get confettiEffect => _confettiEffect;
   int get testQuestionCount => _testQuestionCount;
+  bool get aiChatScrollToBottom => _aiChatScrollToBottom;
   String get aiProvider => _aiProvider;
   String get aiApiKey => _aiApiKey;
   String get aiBaseUrl => _aiBaseUrl;
@@ -77,6 +81,9 @@ class SettingsProvider extends ChangeNotifier {
     _locale =
         await _storage.loadSetting<String>('locale', defaultValue: '') ??
             '';
+    _memorizeMode =
+        await _storage.loadSetting<bool>('memorizeMode', defaultValue: false) ??
+            false;
     _autoAdvance =
         await _storage.loadSetting<bool>('autoAdvance', defaultValue: true) ??
             true;
@@ -98,6 +105,9 @@ class SettingsProvider extends ChangeNotifier {
     _testQuestionCount =
         await _storage.loadSetting<int>('testQuestionCount', defaultValue: 50) ??
             50;
+    _aiChatScrollToBottom =
+        await _storage.loadSetting<bool>('aiChatScrollToBottom', defaultValue: true) ??
+            true;
     _aiProvider =
         await _storage.loadSetting<String>('aiProvider', defaultValue: 'gemini') ??
             'gemini';
@@ -156,6 +166,12 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setMemorizeMode(bool value) async {
+    _memorizeMode = value;
+    await _storage.saveSetting('memorizeMode', value);
+    notifyListeners();
+  }
+
   Future<void> setAutoAdvance(bool value) async {
     _autoAdvance = value;
     await _storage.saveSetting('autoAdvance', value);
@@ -195,6 +211,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setTestQuestionCount(int count) async {
     _testQuestionCount = count;
     await _storage.saveSetting('testQuestionCount', count);
+    notifyListeners();
+  }
+
+  Future<void> setAiChatScrollToBottom(bool value) async {
+    _aiChatScrollToBottom = value;
+    await _storage.saveSetting('aiChatScrollToBottom', value);
     notifyListeners();
   }
 

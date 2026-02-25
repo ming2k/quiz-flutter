@@ -507,15 +507,8 @@ class QuizProvider extends ChangeNotifier {
     _currentPartitionId = _progress!.currentPartitionId;
     _currentIndex = _progress!.currentQuestionIndex;
 
-    // Apply filters based on mode
-    if (_appMode == AppMode.review) {
-      _filteredQuestions = _questions.where((q) {
-        final answer = _userAnswers[q.id];
-        final isReviewable = (answer != null && answer.isCorrect == false) ||
-            _markedQuestions.contains(q.id);
-        return isReviewable && (q.choices.isNotEmpty || q.answer.isNotEmpty);
-      }).toList();
-    } else if (_currentPartitionId != 'all') {
+    // Apply partition filter if needed
+    if (_currentPartitionId != 'all') {
       _applyPartitionFilter();
     }
   }
@@ -574,15 +567,7 @@ class QuizProvider extends ChangeNotifier {
   void setMode(AppMode mode, {int? index}) {
     _appMode = mode;
 
-    if (mode == AppMode.review) {
-      // Filter to only wrong/marked questions
-      _filteredQuestions = _questions.where((q) {
-        final answer = _userAnswers[q.id];
-        final isReviewable = (answer != null && answer.isCorrect == false) ||
-            _markedQuestions.contains(q.id);
-        return isReviewable && (q.choices.isNotEmpty || q.answer.isNotEmpty);
-      }).toList();
-    } else if (_currentPartitionId == 'all') {
+    if (_currentPartitionId == 'all') {
       _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
     } else {
       _applyPartitionFilter();

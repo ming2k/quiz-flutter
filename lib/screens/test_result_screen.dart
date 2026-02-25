@@ -22,7 +22,7 @@ class TestResultScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.get('testResult')),
+        title: Text(l10n.testResult),
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -56,7 +56,7 @@ class TestResultScreen extends StatelessWidget {
                   ),
             ),
             Text(
-              l10n.get('accuracy'),
+              l10n.accuracy,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.grey,
                   ),
@@ -70,7 +70,7 @@ class TestResultScreen extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: Icons.help_outline,
-                    label: l10n.get('totalQuestions'),
+                    label: l10n.totalQuestions,
                     value: result.totalQuestions.toString(),
                     color: colorScheme.primary,
                   ),
@@ -80,7 +80,7 @@ class TestResultScreen extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: Icons.check,
-                    label: l10n.get('correctCount'),
+                    label: l10n.correctCount,
                     value: result.correctCount.toString(),
                     color: passColor,
                   ),
@@ -94,7 +94,7 @@ class TestResultScreen extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: Icons.close,
-                    label: l10n.get('wrongCount'),
+                    label: l10n.wrongCount,
                     value: result.wrongCount.toString(),
                     color: failColor,
                   ),
@@ -104,7 +104,7 @@ class TestResultScreen extends StatelessWidget {
                   child: _buildStatCard(
                     context,
                     icon: Icons.remove_circle_outline,
-                    label: l10n.get('unansweredCount'),
+                    label: l10n.unansweredCount,
                     value: result.unansweredCount.toString(),
                     color: Colors.grey,
                   ),
@@ -125,7 +125,7 @@ class TestResultScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.get('timeTaken'),
+                          l10n.timeTaken,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey,
                               ),
@@ -162,7 +162,7 @@ class TestResultScreen extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                 ),
-                child: Text(l10n.get('backToHome')),
+                child: Text(l10n.backToHome),
               ),
             ),
           ],

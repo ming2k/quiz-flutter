@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
@@ -9,6 +8,7 @@ import 'quiz_screen.dart';
 import 'settings_screen.dart';
 
 import '../services/services.dart';
+import '../utils/toast_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -111,9 +111,10 @@ class _HomeScreenState extends State<HomeScreen> {
       // Reload books and show success
       await quizProvider.loadBooks();
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
         scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Successfully imported "${result.packageName}"'),
+            content: Text(l10n.importSuccess(result.packageName ?? '')),
             backgroundColor: Colors.green,
           ),
         );
@@ -123,22 +124,25 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         showDialog(
           context: context,
-          builder: (dlgCtx) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.error_outline, color: Colors.red),
-                SizedBox(width: 8),
-                Text('Import Failed'),
-              ],
-            ),
-            content: Text(result.errorMessage!),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dlgCtx),
-                child: const Text('OK'),
+          builder: (dlgCtx) {
+            final l10n = AppLocalizations.of(dlgCtx);
+            return AlertDialog(
+              title: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Text(l10n.importFailed),
+                ],
               ),
-            ],
-          ),
+              content: Text(result.errorMessage!),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dlgCtx),
+                  child: Text(l10n.ok),
+                ),
+              ],
+            );
+          },
         );
       }
     }
@@ -160,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             key: const Key('home_import_button'),
             icon: const Icon(Icons.upload_file),
-            tooltip: 'Import Package',
+            tooltip: l10n.importPackage,
             onPressed: () => _importPackage(context),
           ),
           IconButton(
@@ -190,7 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => quiz.loadBooks(),
-                    child: Text(l10n.get('retry')),
+                    child: Text(l10n.retry),
                   ),
                 ],
               ),
@@ -216,8 +220,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildModeSelector(BuildContext context, AppLocalizations l10n, SettingsProvider settings) {
     final modes = [
       (AppMode.practice, l10n.practiceMode, Icons.edit_note),
-      (AppMode.review, l10n.reviewMode, Icons.rate_review),
-      (AppMode.memorize, l10n.memorizeMode, Icons.psychology),
       (AppMode.test, l10n.testMode, Icons.timer),
     ];
 
@@ -241,15 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 if (settings.lastAppMode != mode.$1) {
                   settings.setLastAppMode(mode.$1);
-                  
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(mode.$2),
-                      duration: const Duration(seconds: 1),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  ToastUtils.showToast(context, mode.$2);
                 }
               },
             ),
@@ -260,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBookCard(Book book, AppLocalizations l10n) {
-    final locale = l10n.locale.languageCode;
+    final locale = l10n.localeName;
 
     return Dismissible(
       key: ValueKey('book_${book.id}'),
@@ -279,17 +273,17 @@ class _HomeScreenState extends State<HomeScreen> {
         return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(l10n.get('confirm')),
-            content: Text('Are you sure you want to delete "${book.getDisplayName(locale)}"?'),
+            title: Text(l10n.confirm),
+            content: Text(l10n.confirmDeleteBook(book.getDisplayName(locale))),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(l10n.get('cancel')),
+                child: Text(l10n.cancel),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: Text(l10n.get('delete')),
+                child: Text(l10n.delete),
               ),
             ],
           ),
@@ -335,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${book.totalQuestions} ${l10n.get('questions')}',
+                          '${book.totalQuestions} ${l10n.questions}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: Colors.grey,
                               ),
@@ -362,14 +356,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Otherwise, use the mode from settings (global selection).
     final modeToSet = autoStart ? quiz.appMode : settings.lastAppMode;
 
-    if (modeToSet == AppMode.test && !autoStart) {
-      // Show count selector for new test
-      if (mounted) {
-        _showTestCountSelector(context, book, settings, quiz);
-      }
-      return;
-    }
-
     if (modeToSet == AppMode.test) {
       quiz.startTest(settings.testQuestionCount);
     } else {
@@ -384,81 +370,4 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _showTestCountSelector(BuildContext context, Book book, SettingsProvider settings, QuizProvider quiz) {
-    final l10n = AppLocalizations.of(context);
-    int selectedCount = settings.testQuestionCount;
-    const int minCount = 5;
-    // Cap at book's total questions
-    final int maxCount = book.totalQuestions;
-    const int step = 5;
-    
-    if (maxCount <= minCount) {
-      // Just start if too few questions
-      quiz.startTest(maxCount);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const QuizScreen()),
-      );
-      return;
-    }
-
-    final List<int> options = List.generate(
-      (maxCount - minCount) ~/ step + 1, 
-      (index) => minCount + (index * step)
-    );
-    // Ensure maxCount is included if not a multiple of step
-    if (options.last != maxCount && maxCount > minCount) {
-      options.add(maxCount);
-    }
-    
-    int initialIndex = options.indexOf(selectedCount);
-    if (initialIndex == -1) {
-      initialIndex = options.indexWhere((val) => val >= selectedCount);
-      if (initialIndex == -1) initialIndex = options.length - 1;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.get('testQuestionCount')),
-        content: SizedBox(
-          height: 150,
-          width: double.maxFinite,
-          child: CupertinoPicker(
-            scrollController: FixedExtentScrollController(initialItem: initialIndex),
-            itemExtent: 32,
-            onSelectedItemChanged: (index) {
-              selectedCount = options[index];
-            },
-            children: options.map((count) => Center(
-              child: Text(
-                '$count',
-                style: const TextStyle(fontSize: 20),
-              ),
-            )).toList(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.get('cancel')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              quiz.startTest(selectedCount);
-              // Also update settings to remember this choice
-              settings.setTestQuestionCount(selectedCount);
-              
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const QuizScreen()),
-              );
-            },
-            child: Text(l10n.get('confirm')),
-          ),
-        ],
-      ),
-    );
-  }
 }

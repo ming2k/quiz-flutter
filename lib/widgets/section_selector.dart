@@ -39,7 +39,7 @@ class SectionSelector extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: Text(
-                l10n.get('section'),
+                l10n.section,
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -55,7 +55,7 @@ class SectionSelector extends StatelessWidget {
                   _buildSectionTile(
                     context,
                     id: 'all',
-                    title: l10n.get('allSections'),
+                    title: l10n.allSections,
                     questionCount: totalQuestions,
                     isSelected: currentPartitionId == 'all',
                   ),
@@ -93,7 +93,7 @@ class SectionSelector extends StatelessWidget {
         ),
       ),
       trailing: Text(
-        '$questionCount 题',
+        '$questionCount ${AppLocalizations.of(context).questions}',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary

@@ -12,7 +12,7 @@ class AiService {
   String? _apiKey;
   String? _baseUrl;
   AiProvider _provider = AiProvider.gemini;
-  String _model = 'gemini-2.0-flash';
+  String _model = 'gemini-3-preview';
   String _systemPrompt = '你是一名海航专业且母语为中文的学霸，精通海航英语、航海学（气象学、航海仪器）、船舶结构与货运、船舶操纵与避碰、船舶管理等知识。熟读 UK Hydrographic Office 的 ADMIRALTY 出版物和海图，掌握 COLREG 规范、STCW 公约、SOLAS 等。你的任务是帮助我快速学习相关知识，回答内容精炼易懂，最后总结关键内容方便记忆。';
 
   void configure({

@@ -47,9 +47,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
         ),
         filled: true,
-        fillColor: brightness == Brightness.light 
-            ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
       textSelectionTheme: TextSelectionThemeData(
         selectionColor: colorScheme.primary.withValues(alpha: 0.3),
@@ -86,7 +84,7 @@ class AppTheme {
       // Success is not standard, use green or a custom extension in real world.
       // For now, mapping to a "success-like" color if available, or just keeping the green constant but adapting opacity.
       // Better: Use a tertiary or just the hardcoded success/green for specific semantics that Material doesn't cover strictly.
-      return success.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.3 : 0.2);
+      return success.withValues(alpha: 0.25);
     }
 
     if (isSelected && !isCorrect) {
