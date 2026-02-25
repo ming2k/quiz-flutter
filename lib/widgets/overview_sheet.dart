@@ -84,21 +84,16 @@ class _OverviewSheetState extends State<OverviewSheet> {
                   ),
                 ),
 
-                // Filter Chips
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                // Filter Icons
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     children: [
-                      _buildFilterChip(context, l10n.all, _OverviewFilter.all, quiz),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(context, l10n.correct, _OverviewFilter.correct, quiz),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(context, l10n.wrong, _OverviewFilter.wrong, quiz),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(context, l10n.marked, _OverviewFilter.marked, quiz),
-                      const SizedBox(width: 8),
-                      _buildFilterChip(context, l10n.unanswered, _OverviewFilter.unanswered, quiz),
+                      _buildFilterButton(context, Icons.apps, _OverviewFilter.all),
+                      _buildFilterButton(context, Icons.check_circle_outline, _OverviewFilter.correct),
+                      _buildFilterButton(context, Icons.highlight_off, _OverviewFilter.wrong),
+                      _buildFilterButton(context, Icons.bookmark_outline, _OverviewFilter.marked),
+                      _buildFilterButton(context, Icons.radio_button_unchecked, _OverviewFilter.unanswered),
                     ],
                   ),
                 ),
@@ -212,22 +207,41 @@ class _OverviewSheetState extends State<OverviewSheet> {
     return indices;
   }
 
-  Widget _buildFilterChip(
+  Widget _buildFilterButton(
     BuildContext context,
-    String label,
+    IconData icon,
     _OverviewFilter filter,
-    QuizProvider quiz,
   ) {
     final isSelected = _filter == filter;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (_) {
-        setState(() {
-          _filter = filter;
-        });
-      },
-      showCheckmark: false,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final Color activeColor = switch (filter) {
+      _OverviewFilter.all => colorScheme.primary,
+      _OverviewFilter.correct => AppTheme.success,
+      _OverviewFilter.wrong => colorScheme.error,
+      _OverviewFilter.marked => AppTheme.warning,
+      _OverviewFilter.unanswered => colorScheme.onSurfaceVariant,
+    };
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => setState(() => _filter = filter),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: isSelected
+              ? BoxDecoration(
+                  color: activeColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                )
+              : null,
+          child: Icon(
+            icon,
+            color: isSelected ? activeColor : colorScheme.onSurfaceVariant.withOpacity(0.4),
+            size: 22,
+          ),
+        ),
+      ),
     );
   }
 
