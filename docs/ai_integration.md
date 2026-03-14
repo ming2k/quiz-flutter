@@ -4,14 +4,14 @@ The app uses Google's Gemini API to provide intelligent explanations for exam qu
 
 ## Supported Models
 
-The app currently defaults to **Gemini 3.0 Flash**, which offers a balance of speed and reasoning capability. It also supports Claude models.
+The app currently defaults to **Gemini 3.1 Flash-Lite Preview**, which offers a good speed and cost profile. It also supports Claude models and lets you enter a custom model ID manually.
 
 ## Configuration
 
 Users must provide their own API Key in the Settings screen to enable AI features.
 
 - **Provider**: Choose between Gemini and Claude.
-- **Model**: Default is `gemini-3.0-flash`.
+- **Model**: Default is `gemini-3.1-flash-lite-preview`.
 - **System Prompt**: A customizable prompt that defines the AI's "personality" (e.g., "Professional Maritime Instructor").
 
 ## How it Works

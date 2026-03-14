@@ -12,7 +12,7 @@ class AiService {
   String? _apiKey;
   String? _baseUrl;
   AiProvider _provider = AiProvider.gemini;
-  String _model = 'gemini-3-preview';
+  String _model = 'gemini-3.1-flash-lite-preview';
   String _systemPrompt = '你是一名海航专业且母语为中文的学霸，精通海航英语、航海学（气象学、航海仪器）、船舶结构与货运、船舶操纵与避碰、船舶管理等知识。熟读 UK Hydrographic Office 的 ADMIRALTY 出版物和海图，掌握 COLREG 规范、STCW 公约、SOLAS 等。你的任务是帮助我快速学习相关知识，回答内容精炼易懂，最后总结关键内容方便记忆。';
 
   void configure({
@@ -98,6 +98,11 @@ class AiService {
           'generationConfig': {
             'temperature': 0.7,
             'maxOutputTokens': 2048,
+            // Gemini 3.x models have thinking enabled by default.
+            // Use 'low' to reduce latency for quiz explanations.
+            'thinkingConfig': {
+              'thinkingLevel': 'low',
+            },
           }
         });
 
@@ -121,8 +126,16 @@ class AiService {
             if (data['candidates'] != null &&
                 (data['candidates'] as List).isNotEmpty &&
                 data['candidates'][0]['content'] != null) {
-              final text = data['candidates'][0]['content']['parts'][0]['text'] as String?;
-              if (text != null) yield text;
+              final parts = data['candidates'][0]['content']['parts'] as List?;
+              if (parts != null) {
+                for (final part in parts) {
+                  // Gemini 3.x returns thinking parts with thought: true.
+                  // Skip those and only yield the actual answer text.
+                  if (part['thought'] == true) continue;
+                  final text = part['text'] as String?;
+                  if (text != null) yield text;
+                }
+              }
             }
           } catch (e) {
             // Ignore parse errors for partial chunks or malformed lines

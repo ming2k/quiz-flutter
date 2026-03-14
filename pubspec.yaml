@@ -1,7 +1,7 @@
 name: quiz_app
 description: "A general extensible quiz framework for learning and practice."
 publish_to: 'none'
-version: 1.2.0
+version: 1.2.1
 
 environment:
   sdk: ^3.10.4

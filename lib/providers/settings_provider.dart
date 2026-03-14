@@ -3,6 +3,9 @@ import '../models/models.dart';
 import '../services/services.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const String defaultGeminiModel = 'gemini-3.1-flash-lite-preview';
+  static const String defaultClaudeModel = 'claude-3-5-sonnet-20240620';
+
   final StorageService _storage = StorageService();
 
   // Appearance
@@ -27,7 +30,7 @@ class SettingsProvider extends ChangeNotifier {
   String _aiProvider = 'gemini';
   String _aiApiKey = '';
   String _aiBaseUrl = '';
-  String _aiModel = 'gemini-1.5-flash';
+  String _aiModel = defaultGeminiModel;
   String _aiSystemPrompt =
       '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
   List<String> _customAiPrompts = [
@@ -68,7 +71,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> _loadSettings() async {
     _themeMode = ThemeMode.values[
         await _storage.loadSetting<int>('themeMode', defaultValue: 0) ?? 0];
-    
+
     final savedMode = await _storage.loadSetting<String>('lastAppMode');
     if (savedMode != null) {
       try {
@@ -106,18 +109,28 @@ class SettingsProvider extends ChangeNotifier {
         await _storage.loadSetting<int>('testQuestionCount', defaultValue: 50) ??
             50;
     _aiChatScrollToBottom =
-        await _storage.loadSetting<bool>('aiChatScrollToBottom', defaultValue: true) ??
+        await _storage.loadSetting<bool>(
+              'aiChatScrollToBottom',
+              defaultValue: true,
+            ) ??
             true;
     _aiProvider =
-        await _storage.loadSetting<String>('aiProvider', defaultValue: 'gemini') ??
+        await _storage.loadSetting<String>(
+              'aiProvider',
+              defaultValue: 'gemini',
+            ) ??
             'gemini';
     _aiApiKey =
         await _storage.loadSetting<String>('aiApiKey', defaultValue: '') ?? '';
     _aiBaseUrl =
         await _storage.loadSetting<String>('aiBaseUrl', defaultValue: '') ?? '';
     _aiModel =
-        await _storage.loadSetting<String>('aiModel', defaultValue: 'gemini-1.5-flash') ??
-            'gemini-1.5-flash';
+        await _storage.loadSetting<String>(
+              'aiModel',
+              defaultValue: defaultGeminiModel,
+            ) ??
+            defaultGeminiModel;
+    _aiModel = _normalizeModelForProvider(_aiProvider, _aiModel);
     _aiSystemPrompt = await _storage.loadSetting<String>('aiSystemPrompt',
             defaultValue:
                 '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。') ??
@@ -223,6 +236,11 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAiProvider(String provider) async {
     _aiProvider = provider;
     await _storage.saveSetting('aiProvider', provider);
+    final normalizedModel = _normalizeModelForProvider(provider, _aiModel);
+    if (normalizedModel != _aiModel) {
+      _aiModel = normalizedModel;
+      await _storage.saveSetting('aiModel', normalizedModel);
+    }
     notifyListeners();
   }
 
@@ -242,6 +260,16 @@ class SettingsProvider extends ChangeNotifier {
     _aiModel = model;
     await _storage.saveSetting('aiModel', model);
     notifyListeners();
+  }
+
+  String _normalizeModelForProvider(String provider, String model) {
+    if (provider == 'gemini') {
+      return model.startsWith('gemini-') ? model : defaultGeminiModel;
+    }
+    if (provider == 'claude') {
+      return model.startsWith('claude-') ? model : defaultClaudeModel;
+    }
+    return model;
   }
 
   Future<void> setAiSystemPrompt(String prompt) async {

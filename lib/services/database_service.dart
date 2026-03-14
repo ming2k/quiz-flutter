@@ -586,15 +586,17 @@ class DatabaseService {
       'explanation': q['explanation'],
     });
     
-    insertedCount++;
-
     final subQuestions = q['questions'] as List?;
-    if (subQuestions != null) {
+    if (subQuestions != null && subQuestions.isNotEmpty) {
+      // Parent/passage question: don't count itself, only count sub-questions
       for (var sq in subQuestions) {
         insertedCount += await _insertQuestion(txn, sq, bookId, sectionId, parentId: id);
       }
+    } else {
+      // Leaf question: count it
+      insertedCount++;
     }
-    
+
     return insertedCount;
   }
 

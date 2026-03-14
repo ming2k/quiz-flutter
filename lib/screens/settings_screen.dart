@@ -352,41 +352,110 @@ class SettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final models = settings.aiProvider == 'gemini'
         ? [
-            'gemini-2.0-flash',
-            'gemini-1.5-flash',
-            'gemini-1.5-pro',
-            'gemini-3-pro-preview',
-            'gemini-3-flash-preview'
+            SettingsProvider.defaultGeminiModel,
+            'gemini-3.1-pro-preview',
+            'gemini-3-flash-preview',
+            'gemini-2.5-flash',
+            'gemini-2.5-pro',
           ]
         : [
-            'claude-3-5-sonnet-20240620',
+            SettingsProvider.defaultClaudeModel,
             'claude-3-haiku-20240307',
             'claude-3-sonnet-20240229',
-            'claude-3-opus-20240229'
+            'claude-3-opus-20240229',
           ];
+    final children = <Widget>[
+      ...models.map(
+          (model) => RadioListTile<String>(
+            title: Text(model),
+            value: model,
+            groupValue: settings.aiModel,
+            onChanged: (value) {
+              settings.setAiModel(value!);
+              Navigator.pop(context);
+            },
+          ),
+        ),
+    ];
+    children.add(
+      SimpleDialogOption(
+        onPressed: () {
+          Navigator.pop(context);
+          _showCustomModelDialog(context, settings);
+        },
+        child: const Row(
+          children: [
+            Icon(Icons.edit_outlined),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Custom model'),
+                  SizedBox(height: 2),
+                  Text(
+                    'Enter any model ID manually',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
 
     showDialog(
       context: context,
       builder: (context) => SimpleDialog(
         title: Text(l10n.aiModel),
-        children: models
-            .map(
-              (model) => RadioListTile<String>(
-                title: Text(model),
-                value: model,
-                groupValue: settings.aiModel,
-                onChanged: (value) {
-                  settings.setAiModel(value!);
-                  Navigator.pop(context);
-                },
-              ),
-            )
-            .toList(),
+        children: children,
       ),
     );
   }
 
-  void _showTestQuestionCountDialog(BuildContext context, SettingsProvider settings, AppLocalizations l10n) {
+  void _showCustomModelDialog(BuildContext context, SettingsProvider settings) {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController(text: settings.aiModel);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.aiModel),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'gemini-3.1-flash-lite-preview',
+            helperText: 'You can enter any provider-supported model ID.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final model = controller.text.trim();
+              if (model.isNotEmpty) {
+                settings.setAiModel(model);
+              }
+              Navigator.pop(context);
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTestQuestionCountDialog(
+    BuildContext context,
+    SettingsProvider settings,
+    AppLocalizations l10n,
+  ) {
     int selectedCount = settings.testQuestionCount;
     const int minCount = 5;
     const int maxCount = 200;
@@ -394,7 +463,7 @@ class SettingsScreen extends StatelessWidget {
 
     final List<int> options = List.generate(
       (maxCount - minCount) ~/ step + 1,
-      (index) => minCount + (index * step)
+      (index) => minCount + (index * step),
     );
 
     int initialIndex = options.indexOf(selectedCount);

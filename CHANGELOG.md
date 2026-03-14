@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1] - 2026-03-15
+
+### Fixed
+- **Gemini 3.1 Support**: Added `thinkingConfig` and filtered out thinking parts from streamed responses to properly support Gemini 3.x models.
+- **Model Selector Crash**: Fixed `TypeError` when opening model selection dialog caused by mixed widget types in list.
+- **Question Count Bug**: Reading comprehension passages no longer counted as questions, fixing off-by-one in overview display.
+
+### Changed
+- **Sample Quiz**: Expanded from 10 to 20 questions covering math, science, geography, COLREGs, navigation, meteorology, ship structure, and SOLAS/STCW.
+
 ## [1.2.0] - 2026-02-25
 
 ### Added

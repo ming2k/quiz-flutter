@@ -32,7 +32,7 @@ void main() {
       service.configure(
         apiKey: apiKey,
         provider: AiProvider.gemini,
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.1-flash-lite-preview',
       );
 
       // 3. Call API
