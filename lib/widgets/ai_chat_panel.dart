@@ -12,10 +12,7 @@ import 'bottom_sheet_handle.dart';
 class AiChatPanel extends StatefulWidget {
   final Question question;
 
-  const AiChatPanel({
-    super.key,
-    required this.question,
-  });
+  const AiChatPanel({super.key, required this.question});
 
   @override
   State<AiChatPanel> createState() => _AiChatPanelState();
@@ -68,12 +65,15 @@ class _AiChatPanelState extends State<AiChatPanel> {
       _lastSessionId = sessionId;
       _lastMessageCount = messages.length;
       _wasStreaming = isStreaming;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom(animated: false));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _scrollToBottom(animated: false),
+      );
       return;
     }
 
     // Update state but don't auto-scroll to bottom
-    if (messages.length > _lastMessageCount || (isStreaming && !_wasStreaming)) {
+    if (messages.length > _lastMessageCount ||
+        (isStreaming && !_wasStreaming)) {
       _lastMessageCount = messages.length;
       _wasStreaming = isStreaming;
       // Removed _scrollToBottom() to allow manual scrolling only
@@ -106,9 +106,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
       service.configure(
         apiKey: settings.aiApiKey,
         baseUrl: settings.aiBaseUrl,
-        provider: settings.aiProvider == 'claude'
-            ? AiProvider.claude
-            : AiProvider.gemini,
+        provider: AiProvider.gemini,
         model: settings.aiModel,
       );
     });
@@ -133,14 +131,21 @@ class _AiChatPanelState extends State<AiChatPanel> {
     _lastViewInset = viewInset;
 
     // Determine total count: history + (optional) streaming bubble
-    final hasStreaming = aiStream != null && aiStream.isLoading && aiStream.streamingResponse.isNotEmpty;
-    final hasLoadingIndicator = aiStream != null && aiStream.isLoading && aiStream.streamingResponse.isEmpty;
+    final hasStreaming =
+        aiStream != null &&
+        aiStream.isLoading &&
+        aiStream.streamingResponse.isNotEmpty;
+    final hasLoadingIndicator =
+        aiStream != null &&
+        aiStream.isLoading &&
+        aiStream.streamingResponse.isEmpty;
     final extraItemCount = (hasStreaming || hasLoadingIndicator) ? 1 : 0;
     final itemCount = messages.length + extraItemCount;
 
-    final bool isCurrentSessionStreaming = aiStream != null &&
-                                           aiStream.isLoading && 
-                                           aiStream.sessionId == quiz.currentChatSessionId;
+    final bool isCurrentSessionStreaming =
+        aiStream != null &&
+        aiStream.isLoading &&
+        aiStream.sessionId == quiz.currentChatSessionId;
     final bool hasText = _messageController.text.trim().isNotEmpty;
 
     return GestureDetector(
@@ -150,7 +155,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
       child: Container(
         key: const Key('ai_chat_panel_container'),
         height: MediaQuery.of(context).size.height * 0.75,
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
@@ -161,141 +168,184 @@ class _AiChatPanelState extends State<AiChatPanel> {
             // Handle
             const BottomSheetHandle(),
 
-          // Header with Session Management
-          Padding(
-            key: const Key('ai_chat_header_padding'),
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 0.0, bottom: 4.0),
-            child: Row(
-              key: const Key('ai_chat_header_row'),
-              children: [
-                Text(
-                  AppLocalizations.of(context).aiChatTitle,
-                  key: const Key('ai_chat_header_title'),
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const Spacer(key: Key('ai_chat_header_spacer')),
-                IconButton(
-                  key: const Key('ai_chat_history_button'),
-                  icon: const Icon(Icons.history),
-                  tooltip: AppLocalizations.of(context).chatHistory,
-                  onPressed: () => _showHistorySheet(context),
-                ),
-                IconButton(
-                  key: const Key('ai_chat_new_button'),
-                  icon: const Icon(Icons.add),
-                  tooltip: AppLocalizations.of(context).newChat,
-                  onPressed: () {
-                    FocusScope.of(context).unfocus();
-                    quiz.createChatSession(AppLocalizations.of(context).newChat);
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Chat Messages or Quick Replies
-          Expanded(
-            key: const Key('ai_chat_content_expanded'),
-            child: (messages.isEmpty && !hasStreaming && !hasLoadingIndicator)
-                ? _buildQuickReplies(context)
-                : ListView.builder(
-                    key: const Key('ai_chat_listview'),
-                    controller: _scrollController,
-                    reverse: false,
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    itemCount: itemCount,
-                    itemBuilder: (context, index) {
-                      // 1. History messages
-                      if (index < messages.length) {
-                        return _buildMessageBubble(messages[index], index);
-                      }
-
-                      // 2. Streaming bubble or loading indicator at the end
-                      if (hasStreaming) {
-                        return _buildMessageBubble(ChatMessage(text: aiStream!.streamingResponse, isUser: false), index, isStreaming: true);
-                      } else {
-                        return _buildMessageBubble(ChatMessage(text: '...', isUser: false), index);
-                      }
+            // Header with Session Management
+            Padding(
+              key: const Key('ai_chat_header_padding'),
+              padding: const EdgeInsets.only(
+                left: 16.0,
+                right: 16.0,
+                top: 0.0,
+                bottom: 4.0,
+              ),
+              child: Row(
+                key: const Key('ai_chat_header_row'),
+                children: [
+                  Text(
+                    AppLocalizations.of(context).aiChatTitle,
+                    key: const Key('ai_chat_header_title'),
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const Spacer(key: Key('ai_chat_header_spacer')),
+                  IconButton(
+                    key: const Key('ai_chat_history_button'),
+                    icon: const Icon(Icons.history),
+                    tooltip: AppLocalizations.of(context).chatHistory,
+                    onPressed: () => _showHistorySheet(context),
+                  ),
+                  IconButton(
+                    key: const Key('ai_chat_new_button'),
+                    icon: const Icon(Icons.add),
+                    tooltip: AppLocalizations.of(context).newChat,
+                    onPressed: () {
+                      FocusScope.of(context).unfocus();
+                      quiz.createChatSession(
+                        AppLocalizations.of(context).newChat,
+                      );
                     },
                   ),
-          ),
-
-          // Input Area
-          Container(
-            key: const Key('ai_chat_input_outer_container'),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + MediaQuery.of(context).padding.bottom),
-            child: SafeArea(
-              key: const Key('ai_chat_input_safe_area'),
-              top: false,
-              child: Row(
-                key: const Key('ai_chat_input_row'),
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    key: const Key('ai_chat_input_expanded'),
-                    child: Container(
-                      key: const Key('ai_chat_input_inner_container'),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.outlineVariant,
-                          width: 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        key: const Key('ai_chat_input_textfield'),
-                        controller: _messageController,
-                        maxLines: 5,
-                        minLines: 1,
-                        textInputAction: TextInputAction.send,
-                        style: const TextStyle(fontSize: 15),
-                        decoration: InputDecoration(
-                          hintText: AppLocalizations.of(context).chatInputHint,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                          isDense: true,
-                          filled: true,
-                          fillColor: Colors.transparent,
-                        ),
-                        onSubmitted: isCurrentSessionStreaming ? null : _sendMessage,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12, key: Key('ai_chat_input_spacer')),
-                  _buildActionButton(context, quiz, isCurrentSessionStreaming, hasText),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
-  Widget _buildActionButton(BuildContext context, QuizProvider quiz, bool isStreaming, bool hasText) {
+            // Chat Messages or Quick Replies
+            Expanded(
+              key: const Key('ai_chat_content_expanded'),
+              child: (messages.isEmpty && !hasStreaming && !hasLoadingIndicator)
+                  ? _buildQuickReplies(context)
+                  : ListView.builder(
+                      key: const Key('ai_chat_listview'),
+                      controller: _scrollController,
+                      reverse: false,
+                      physics: const ClampingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      itemCount: itemCount,
+                      itemBuilder: (context, index) {
+                        // 1. History messages
+                        if (index < messages.length) {
+                          return _buildMessageBubble(messages[index], index);
+                        }
+
+                        // 2. Streaming bubble or loading indicator at the end
+                        if (hasStreaming) {
+                          return _buildMessageBubble(
+                            ChatMessage(
+                              text: aiStream!.streamingResponse,
+                              isUser: false,
+                            ),
+                            index,
+                            isStreaming: true,
+                          );
+                        } else {
+                          return _buildMessageBubble(
+                            ChatMessage(text: '...', isUser: false),
+                            index,
+                          );
+                        }
+                      },
+                    ),
+            ),
+
+            // Input Area
+            Container(
+              key: const Key('ai_chat_input_outer_container'),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                8,
+                16,
+                8 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: SafeArea(
+                key: const Key('ai_chat_input_safe_area'),
+                top: false,
+                child: Row(
+                  key: const Key('ai_chat_input_row'),
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      key: const Key('ai_chat_input_expanded'),
+                      child: Container(
+                        key: const Key('ai_chat_input_inner_container'),
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 1,
+                          ),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: TextField(
+                          key: const Key('ai_chat_input_textfield'),
+                          controller: _messageController,
+                          maxLines: 5,
+                          minLines: 1,
+                          textInputAction: TextInputAction.send,
+                          style: const TextStyle(fontSize: 15),
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(
+                              context,
+                            ).chatInputHint,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                            ),
+                            isDense: true,
+                            filled: true,
+                            fillColor: Colors.transparent,
+                          ),
+                          onSubmitted: isCurrentSessionStreaming
+                              ? null
+                              : _sendMessage,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12, key: Key('ai_chat_input_spacer')),
+                    _buildActionButton(
+                      context,
+                      quiz,
+                      isCurrentSessionStreaming,
+                      hasText,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context,
+    QuizProvider quiz,
+    bool isStreaming,
+    bool hasText,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: isStreaming 
-            ? Colors.red.withValues(alpha: 0.1) 
+        color: isStreaming
+            ? Colors.red.withValues(alpha: 0.1)
             : (hasText ? colorScheme.primary : Colors.transparent),
         shape: BoxShape.circle,
       ),
@@ -303,13 +353,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: isStreaming 
+          onTap: isStreaming
               ? () => quiz.cancelAiChat(quiz.currentChatSessionId!)
               : (hasText ? () => _sendMessage(_messageController.text) : null),
           child: Icon(
             isStreaming ? Icons.stop_rounded : Icons.arrow_upward_rounded,
-            color: isStreaming 
-                ? Colors.red 
+            color: isStreaming
+                ? Colors.red
                 : (hasText ? Colors.white : Colors.grey.shade400),
             size: 24,
           ),
@@ -346,14 +396,25 @@ class _AiChatPanelState extends State<AiChatPanel> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.chat_bubble_outline, key: const Key('ai_chat_quick_replies_icon'), size: 48, color: Colors.grey.shade400),
-                  const SizedBox(height: 16, key: Key('ai_chat_quick_replies_spacer_1')),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    key: const Key('ai_chat_quick_replies_icon'),
+                    size: 48,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(
+                    height: 16,
+                    key: Key('ai_chat_quick_replies_spacer_1'),
+                  ),
                   Text(
                     l10n.startConversation,
                     key: const Key('ai_chat_quick_replies_text'),
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
                   ),
-                  const SizedBox(height: 24, key: Key('ai_chat_quick_replies_spacer_2')),
+                  const SizedBox(
+                    height: 24,
+                    key: Key('ai_chat_quick_replies_spacer_2'),
+                  ),
                   Wrap(
                     key: const Key('ai_chat_quick_replies_wrap'),
                     spacing: 8,
@@ -366,9 +427,13 @@ class _AiChatPanelState extends State<AiChatPanel> {
                         key: Key('ai_chat_suggestion_$index'),
                         label: Text(text),
                         onPressed: () => _sendMessage(text),
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         side: BorderSide.none,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       );
                     }).toList(),
                   ),
@@ -380,6 +445,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
       },
     );
   }
+
   void _showHistorySheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -394,7 +460,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
             final sessions = quiz.chatSessions;
             return Container(
               width: double.infinity,
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).padding.bottom,
+              ),
               child: Column(
                 key: const Key('ai_chat_history_column'),
                 mainAxisSize: MainAxisSize.min,
@@ -432,16 +500,24 @@ class _AiChatPanelState extends State<AiChatPanel> {
                           key: const Key('ai_chat_history_listview'),
                           shrinkWrap: true,
                           itemCount: sessions.length,
-                          separatorBuilder: (context, index) => const Divider(key: Key('ai_chat_history_divider'), height: 1),
+                          separatorBuilder: (context, index) => const Divider(
+                            key: Key('ai_chat_history_divider'),
+                            height: 1,
+                          ),
                           itemBuilder: (context, index) {
                             final session = sessions[index];
-                            final isSelected = session.id == quiz.currentChatSessionId;
+                            final isSelected =
+                                session.id == quiz.currentChatSessionId;
                             return ListTile(
                               key: Key('ai_chat_history_item_$index'),
                               leading: Icon(
-                                isSelected ? Icons.chat_bubble : Icons.chat_bubble_outline,
+                                isSelected
+                                    ? Icons.chat_bubble
+                                    : Icons.chat_bubble_outline,
                                 key: Key('ai_chat_history_item_icon_$index'),
-                                color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
                               ),
                               title: Text(
                                 session.title,
@@ -449,14 +525,20 @@ class _AiChatPanelState extends State<AiChatPanel> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
                                 ),
                               ),
                               subtitle: Text(
                                 DateFormat('MM/dd HH:mm').format(
-                                  DateTime.fromMillisecondsSinceEpoch(session.createdAt),
+                                  DateTime.fromMillisecondsSinceEpoch(
+                                    session.createdAt,
+                                  ),
                                 ),
-                                key: Key('ai_chat_history_item_subtitle_$index'),
+                                key: Key(
+                                  'ai_chat_history_item_subtitle_$index',
+                                ),
                               ),
                               onTap: () {
                                 FocusScope.of(context).unfocus();
@@ -464,14 +546,34 @@ class _AiChatPanelState extends State<AiChatPanel> {
                                 Navigator.pop(context);
                               },
                               trailing: Row(
-                                key: Key('ai_chat_history_item_trailing_$index'),
+                                key: Key(
+                                  'ai_chat_history_item_trailing_$index',
+                                ),
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (isSelected) Icon(Icons.check, key: Key('ai_chat_history_item_check_$index'), size: 16, color: Colors.green),
+                                  if (isSelected)
+                                    Icon(
+                                      Icons.check,
+                                      key: Key(
+                                        'ai_chat_history_item_check_$index',
+                                      ),
+                                      size: 16,
+                                      color: Colors.green,
+                                    ),
                                   IconButton(
-                                    key: Key('ai_chat_history_item_delete_$index'),
-                                    icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                                    onPressed: () => _confirmDeleteSession(context, quiz, session),
+                                    key: Key(
+                                      'ai_chat_history_item_delete_$index',
+                                    ),
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      size: 20,
+                                      color: Colors.redAccent,
+                                    ),
+                                    onPressed: () => _confirmDeleteSession(
+                                      context,
+                                      quiz,
+                                      session,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -489,14 +591,24 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
-  void _confirmDeleteSession(BuildContext context, QuizProvider quiz, ChatSession session) {
+  void _confirmDeleteSession(
+    BuildContext context,
+    QuizProvider quiz,
+    ChatSession session,
+  ) {
     final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         key: const Key('ai_chat_delete_dialog'),
-        title: Text(l10n.deleteChat, key: const Key('ai_chat_delete_dialog_title')),
-        content: Text(l10n.confirmDeleteChat(session.title), key: const Key('ai_chat_delete_dialog_content')),
+        title: Text(
+          l10n.deleteChat,
+          key: const Key('ai_chat_delete_dialog_title'),
+        ),
+        content: Text(
+          l10n.confirmDeleteChat(session.title),
+          key: const Key('ai_chat_delete_dialog_content'),
+        ),
         actions: [
           TextButton(
             key: const Key('ai_chat_delete_dialog_cancel'),
@@ -516,7 +628,11 @@ class _AiChatPanelState extends State<AiChatPanel> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message, int index, {bool isStreaming = false}) {
+  Widget _buildMessageBubble(
+    ChatMessage message,
+    int index, {
+    bool isStreaming = false,
+  }) {
     final isUser = message.isUser;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -538,14 +654,20 @@ class _AiChatPanelState extends State<AiChatPanel> {
         child: Container(
           key: Key('ai_chat_message_container_$index'),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
           decoration: BoxDecoration(
             color: bubbleColor,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(20),
               topRight: const Radius.circular(20),
-              bottomLeft: isUser ? const Radius.circular(20) : const Radius.circular(4),
-              bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(20),
+              bottomLeft: isUser
+                  ? const Radius.circular(20)
+                  : const Radius.circular(4),
+              bottomRight: isUser
+                  ? const Radius.circular(4)
+                  : const Radius.circular(20),
             ),
           ),
           child: isStreaming
@@ -561,7 +683,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
                       selectionColor: isUser
                           ? colorScheme.onPrimary.withValues(alpha: 0.3)
                           : colorScheme.primary.withValues(alpha: 0.3),
-                      selectionHandleColor: isUser ? colorScheme.onPrimary : colorScheme.primary,
+                      selectionHandleColor: isUser
+                          ? colorScheme.onPrimary
+                          : colorScheme.primary,
                     ),
                   ),
                   child: MarkdownContent(
@@ -583,7 +707,9 @@ class _AiChatPanelState extends State<AiChatPanel> {
     final aiStream = quiz.currentAiStream;
 
     // Only prevent sending if THIS session is already streaming
-    if (aiStream != null && aiStream.isLoading && aiStream.sessionId == quiz.currentChatSessionId) {
+    if (aiStream != null &&
+        aiStream.isLoading &&
+        aiStream.sessionId == quiz.currentChatSessionId) {
       return;
     }
 
@@ -599,7 +725,10 @@ class _AiChatPanelState extends State<AiChatPanel> {
       }
     } catch (e) {
       if (mounted) {
-        ToastUtils.showToast(context, e.toString().replaceAll("Exception: ", ""));
+        ToastUtils.showToast(
+          context,
+          e.toString().replaceAll("Exception: ", ""),
+        );
       }
     }
   }

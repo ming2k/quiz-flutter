@@ -210,10 +210,10 @@ AI features are opt-in. Configure in **Settings → AI**:
 
 | Field | Description |
 |-------|-------------|
-| Provider | `gemini`, `claude`, or `vertex` |
+| Provider | `gemini` or `vertex` |
 | API Key | Your API key |
 | Base URL | Optional; override for OpenAI-compatible proxies |
-| Model | Model ID (e.g. `gemini-3.1-flash-lite-preview`, `claude-3-5-sonnet-20240620`) |
+| Model | Model ID (e.g. `gemini-3.1-flash-lite-preview`) |
 
 The AI service streams responses. No data is stored server-side — the question stem, choices, and correct answer are sent as a one-shot prompt per request.
 

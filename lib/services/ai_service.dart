@@ -1,8 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/chat_message.dart';
 
-enum AiProvider { gemini, claude, vertex }
+enum AiProvider { gemini, vertex }
+
+class _GeminiContextCacheEntry {
+  final String name;
+  final String fingerprint;
+
+  const _GeminiContextCacheEntry({
+    required this.name,
+    required this.fingerprint,
+  });
+}
 
 class AiService {
   static final AiService _instance = AiService._internal();
@@ -13,7 +24,9 @@ class AiService {
   String? _baseUrl;
   AiProvider _provider = AiProvider.gemini;
   String _model = 'gemini-3.1-flash-lite-preview';
-  String _systemPrompt = '你是一名海航专业且母语为中文的学霸，精通海航英语、航海学（气象学、航海仪器）、船舶结构与货运、船舶操纵与避碰、船舶管理等知识。熟读 UK Hydrographic Office 的 ADMIRALTY 出版物和海图，掌握 COLREG 规范、STCW 公约、SOLAS 等。你的任务是帮助我快速学习相关知识，回答内容精炼易懂，最后总结关键内容方便记忆。';
+  String _systemPrompt =
+      '你是一名海航专业且母语为中文的学霸，精通海航英语、航海学（气象学、航海仪器）、船舶结构与货运、船舶操纵与避碰、船舶管理等知识。熟读 UK Hydrographic Office 的 ADMIRALTY 出版物和海图，掌握 COLREG 规范、STCW 公约、SOLAS 等。你的任务是帮助我快速学习相关知识，回答内容精炼易懂，最后总结关键内容方便记忆。';
+  final Map<int, _GeminiContextCacheEntry> _geminiContextCache = {};
 
   void configure({
     String? apiKey,
@@ -31,44 +44,63 @@ class AiService {
 
   bool get isConfigured => _apiKey != null && _apiKey!.isNotEmpty;
 
+  void clearSessionContext(int sessionId) {
+    _geminiContextCache.remove(sessionId);
+  }
+
   Stream<String> explain({
     required String questionStem,
     required Map<String, String> options,
     required String correctAnswer,
     String? userQuestion,
+    List<ChatMessage> history = const [],
+    int? sessionId,
   }) async* {
     if (!isConfigured) {
       throw Exception('AI service not configured. Please set API key.');
     }
 
-    final prompt = _buildPrompt(
+    final questionContext = _buildQuestionContext(
       questionStem: questionStem,
       options: options,
       correctAnswer: correctAnswer,
+    );
+    final effectiveHistory = _buildEffectiveHistory(
+      history: history,
       userQuestion: userQuestion,
     );
 
     Stream<String> stream;
     switch (_provider) {
       case AiProvider.gemini:
-        stream = _callGeminiStream(prompt);
-        break;
-      case AiProvider.claude:
-        stream = _callClaudeStream(prompt);
+        stream = _callGeminiStream(
+          questionContext: questionContext,
+          history: effectiveHistory,
+          sessionId: sessionId,
+        );
         break;
       case AiProvider.vertex:
-        stream = _callVertexStream(prompt);
+        stream = _callVertexStream(
+          questionContext: questionContext,
+          history: effectiveHistory,
+        );
         break;
     }
 
     yield* stream;
   }
 
-  Stream<String> _callGeminiStream(String prompt) async* {
+  Stream<String> _callGeminiStream({
+    required String questionContext,
+    required List<ChatMessage> history,
+    int? sessionId,
+  }) async* {
     final host = (_baseUrl != null && _baseUrl!.isNotEmpty)
         ? _baseUrl!
         : 'https://generativelanguage.googleapis.com';
-    final cleanHost = host.endsWith('/') ? host.substring(0, host.length - 1) : host;
+    final cleanHost = host.endsWith('/')
+        ? host.substring(0, host.length - 1)
+        : host;
 
     final url = Uri.parse(
       '$cleanHost/v1beta/models/$_model:streamGenerateContent?alt=sse',
@@ -78,46 +110,70 @@ class AiService {
     http.StreamedResponse response;
 
     try {
+      final cachedContentName = sessionId == null
+          ? null
+          : await _ensureGeminiCachedContext(
+              sessionId: sessionId,
+              questionContext: questionContext,
+              host: cleanHost,
+            );
+
       final request = http.Request('POST', url)
         ..headers['Content-Type'] = 'application/json'
         ..headers['x-goog-api-key'] = _apiKey!
         ..body = jsonEncode({
-          'system_instruction': {
-            'parts': [
-              {'text': _systemPrompt}
-            ]
-          },
-          'contents': [
-            {
-              'role': 'user',
-              'parts': [
-                {'text': prompt}
-              ]
-            }
-          ],
+          ...?cachedContentName == null
+              ? null
+              : {'cachedContent': cachedContentName},
+          ...?cachedContentName != null
+              ? null
+              : {
+                  'systemInstruction': {
+                    'parts': [
+                      {
+                        'text': _buildInlineContextSystemPrompt(
+                          questionContext,
+                        ),
+                      },
+                    ],
+                  },
+                },
+          'contents': _buildGeminiContents(history),
           'generationConfig': {
             'temperature': 0.7,
             'maxOutputTokens': 2048,
             // Gemini 3.x models have thinking enabled by default.
             // Use 'low' to reduce latency for quiz explanations.
-            'thinkingConfig': {
-              'thinkingLevel': 'low',
-            },
-          }
+            'thinkingConfig': {'thinkingLevel': 'low'},
+          },
         });
 
       // Connection timeout logic manually implemented since http.send doesn't have it directly
       // However, we can use a Future with timeout for the connection part.
-      response = await client.send(request).timeout(const Duration(seconds: 30));
+      response = await client
+          .send(request)
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode != 200) {
-         final body = await response.stream.bytesToString();
-         throw Exception('Gemini API error: ${response.statusCode} - $body');
+        final body = await response.stream.bytesToString();
+        if (cachedContentName != null &&
+            (body.contains('cachedContent') ||
+                body.contains('cachedContents'))) {
+          _geminiContextCache.remove(sessionId);
+          yield* _callGeminiStream(
+            questionContext: questionContext,
+            history: history,
+            sessionId: sessionId,
+          );
+          return;
+        }
+        throw Exception('Gemini API error: ${response.statusCode} - $body');
       }
 
-      await for (final line in response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
+      await for (final line
+          in response.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
         if (line.startsWith('data: ')) {
           final jsonStr = line.substring(6).trim();
           if (jsonStr.isEmpty) continue;
@@ -151,71 +207,127 @@ class AiService {
     }
   }
 
-  Stream<String> _callClaudeStream(String prompt) async* {
-    final host = (_baseUrl != null && _baseUrl!.isNotEmpty)
-        ? _baseUrl!
-        : 'https://api.anthropic.com';
-    final cleanHost = host.endsWith('/') ? host.substring(0, host.length - 1) : host;
-    final url = Uri.parse('$cleanHost/v1/messages');
+  Stream<String> _callVertexStream({
+    required String questionContext,
+    required List<ChatMessage> history,
+  }) async* {
+    throw UnimplementedError('Vertex AI streaming not implemented');
+  }
 
+  Future<String?> _ensureGeminiCachedContext({
+    required int sessionId,
+    required String questionContext,
+    required String host,
+  }) async {
+    final fingerprint = '$host\n$_model\n$_systemPrompt\n$questionContext';
+    final cachedEntry = _geminiContextCache[sessionId];
+    if (cachedEntry != null && cachedEntry.fingerprint == fingerprint) {
+      return cachedEntry.name;
+    }
+
+    final url = Uri.parse('$host/v1beta/cachedContents');
     final client = http.Client();
-    http.StreamedResponse response;
 
     try {
       final request = http.Request('POST', url)
         ..headers['Content-Type'] = 'application/json'
-        ..headers['x-api-key'] = _apiKey!
-        ..headers['anthropic-version'] = '2023-06-01'
+        ..headers['x-goog-api-key'] = _apiKey!
         ..body = jsonEncode({
-          'model': _model.isEmpty ? 'claude-3-haiku-20240307' : _model,
-          'max_tokens': 2048,
-          'stream': true,
-          'system': _systemPrompt,
-          'messages': [
-            {'role': 'user', 'content': prompt}
+          'model': 'models/$_model',
+          'displayName': 'quiz-session-$sessionId',
+          'systemInstruction': {
+            'parts': [
+              {'text': _systemPrompt},
+            ],
+          },
+          'contents': [
+            {
+              'role': 'user',
+              'parts': [
+                {'text': questionContext},
+              ],
+            },
           ],
+          'ttl': '3600s',
         });
 
-      response = await client.send(request).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode != 200) {
-        final body = await response.stream.bytesToString();
-        throw Exception('Claude API error: ${response.statusCode} - $body');
+      final response = await client
+          .send(request)
+          .timeout(const Duration(seconds: 30));
+      final body = await response.stream.bytesToString();
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return null;
       }
 
-      await for (final line in response.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
-        if (line.startsWith('data: ')) {
-          final jsonStr = line.substring(6).trim();
-          if (jsonStr == '[DONE]') break;
-          try {
-            final data = jsonDecode(jsonStr);
-            if (data['type'] == 'content_block_delta' && data['delta'] != null) {
-               final text = data['delta']['text'] as String?;
-               if (text != null) yield text;
-            }
-          } catch (_) {}
-        }
-      }
-    } on TimeoutException {
-      throw Exception('连接超时 (30s)，请检查网络');
-    } catch (e) {
-      throw Exception('AI Service Error: $e');
+      final data = jsonDecode(body) as Map<String, dynamic>;
+      final name = data['name'] as String?;
+      if (name == null || name.isEmpty) return null;
+
+      _geminiContextCache[sessionId] = _GeminiContextCacheEntry(
+        name: name,
+        fingerprint: fingerprint,
+      );
+      return name;
+    } catch (_) {
+      return null;
     } finally {
       client.close();
     }
   }
 
-  Stream<String> _callVertexStream(String prompt) async* {
-    throw UnimplementedError('Vertex AI streaming not implemented');
+  List<ChatMessage> _buildEffectiveHistory({
+    required List<ChatMessage> history,
+    String? userQuestion,
+  }) {
+    final effectiveHistory =
+        history
+            .where(_shouldIncludeHistoryMessage)
+            .map(
+              (message) => ChatMessage(
+                text: message.text.trim(),
+                isUser: message.isUser,
+                timestamp: message.timestamp,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+    if (effectiveHistory.isNotEmpty) {
+      return effectiveHistory;
+    }
+
+    final fallbackPrompt =
+        (userQuestion != null && userQuestion.trim().isNotEmpty)
+        ? userQuestion.trim()
+        : '请详细解析这道题，说明为什么答案是正确的。';
+
+    return [ChatMessage(text: fallbackPrompt, isUser: true)];
   }
 
-  String _buildPrompt({
+  bool _shouldIncludeHistoryMessage(ChatMessage message) {
+    final text = message.text.trim();
+    if (text.isEmpty) return false;
+    if (!message.isUser && text.startsWith('Error:')) return false;
+    return true;
+  }
+
+  List<Map<String, dynamic>> _buildGeminiContents(List<ChatMessage> history) {
+    return history
+        .map(
+          (message) => {
+            'role': message.isUser ? 'user' : 'model',
+            'parts': [
+              {'text': message.text},
+            ],
+          },
+        )
+        .toList();
+  }
+
+  String _buildQuestionContext({
     required String questionStem,
     required Map<String, String> options,
     required String correctAnswer,
-    String? userQuestion,
   }) {
     final buffer = StringBuffer();
     buffer.writeln('题目：');
@@ -227,24 +339,21 @@ class AiService {
     });
     buffer.writeln();
     buffer.writeln('正确答案：$correctAnswer');
-
-    if (userQuestion != null && userQuestion.isNotEmpty) {
-      buffer.writeln();
-      buffer.writeln('用户问题：$userQuestion');
-    } else {
-      buffer.writeln();
-      buffer.writeln('请详细解析这道题，说明为什么答案是正确的。');
-    }
-
     return buffer.toString();
+  }
+
+  String _buildInlineContextSystemPrompt(String questionContext) {
+    return '$_systemPrompt\n\n以下是当前对话的固定题目上下文，请始终以此为准：\n\n$questionContext';
   }
 
   String _convertToMarkdown(String html) {
     if (html.isEmpty) return '';
 
     // If it already looks like markdown (simple check), return as is
-    if (html.contains('**') || html.contains('# ') || (html.contains('[') && html.contains(']'))) {
-       return html;
+    if (html.contains('**') ||
+        html.contains('# ') ||
+        (html.contains('[') && html.contains(']'))) {
+      return html;
     }
 
     // Basic HTML to Markdown conversion

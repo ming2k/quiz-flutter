@@ -4,7 +4,6 @@ import '../services/services.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String defaultGeminiModel = 'gemini-3.1-flash-lite-preview';
-  static const String defaultClaudeModel = 'claude-3-5-sonnet-20240620';
 
   final StorageService _storage = StorageService();
 
@@ -31,17 +30,9 @@ class SettingsProvider extends ChangeNotifier {
   String _aiApiKey = '';
   String _aiBaseUrl = '';
   String _aiModel = defaultGeminiModel;
-  String _aiSystemPrompt =
-      '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
-  List<String> _customAiPrompts = [
-    '详细解析本题',
-    '为什么其他选项是错误的？',
-    '这道题考察的知识点是什么？',
-  ];
-  List<String> _selectionMenuItems = [
-    'Copy',
-    'Select All',
-  ];
+  String _aiSystemPrompt = '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
+  List<String> _customAiPrompts = ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'];
+  List<String> _selectionMenuItems = ['Copy', 'Select All'];
 
   // Getters
   AppMode get lastAppMode => _lastAppMode;
@@ -56,7 +47,6 @@ class SettingsProvider extends ChangeNotifier {
   bool get confettiEffect => _confettiEffect;
   int get testQuestionCount => _testQuestionCount;
   bool get aiChatScrollToBottom => _aiChatScrollToBottom;
-  String get aiProvider => _aiProvider;
   String get aiApiKey => _aiApiKey;
   String get aiBaseUrl => _aiBaseUrl;
   String get aiModel => _aiModel;
@@ -69,8 +59,12 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> _loadSettings() async {
-    _themeMode = ThemeMode.values[
-        await _storage.loadSetting<int>('themeMode', defaultValue: 0) ?? 0];
+    _themeMode =
+        ThemeMode.values[await _storage.loadSetting<int>(
+              'themeMode',
+              defaultValue: 0,
+            ) ??
+            0];
 
     final savedMode = await _storage.loadSetting<String>('lastAppMode');
     if (savedMode != null) {
@@ -82,81 +76,85 @@ class SettingsProvider extends ChangeNotifier {
     }
 
     _locale =
-        await _storage.loadSetting<String>('locale', defaultValue: '') ??
-            '';
+        await _storage.loadSetting<String>('locale', defaultValue: '') ?? '';
     _memorizeMode =
         await _storage.loadSetting<bool>('memorizeMode', defaultValue: false) ??
-            false;
+        false;
     _autoAdvance =
         await _storage.loadSetting<bool>('autoAdvance', defaultValue: true) ??
-            true;
+        true;
     _showAnalysis =
         await _storage.loadSetting<bool>('showAnalysis', defaultValue: true) ??
-            true;
+        true;
     _showNotes =
         await _storage.loadSetting<bool>('showNotes', defaultValue: true) ??
-            true;
+        true;
     _soundEffects =
         await _storage.loadSetting<bool>('soundEffects', defaultValue: true) ??
-            true;
+        true;
     _hapticFeedback =
-        await _storage.loadSetting<bool>('hapticFeedback', defaultValue: true) ??
-            true;
+        await _storage.loadSetting<bool>(
+          'hapticFeedback',
+          defaultValue: true,
+        ) ??
+        true;
     _confettiEffect =
-        await _storage.loadSetting<bool>('confettiEffect', defaultValue: true) ??
-            true;
+        await _storage.loadSetting<bool>(
+          'confettiEffect',
+          defaultValue: true,
+        ) ??
+        true;
     _testQuestionCount =
-        await _storage.loadSetting<int>('testQuestionCount', defaultValue: 50) ??
-            50;
+        await _storage.loadSetting<int>(
+          'testQuestionCount',
+          defaultValue: 50,
+        ) ??
+        50;
     _aiChatScrollToBottom =
         await _storage.loadSetting<bool>(
-              'aiChatScrollToBottom',
-              defaultValue: true,
-            ) ??
-            true;
+          'aiChatScrollToBottom',
+          defaultValue: true,
+        ) ??
+        true;
     _aiProvider =
         await _storage.loadSetting<String>(
-              'aiProvider',
-              defaultValue: 'gemini',
-            ) ??
-            'gemini';
+          'aiProvider',
+          defaultValue: 'gemini',
+        ) ??
+        'gemini';
+    if (_aiProvider == 'claude') {
+      _aiProvider = 'gemini';
+      await _storage.saveSetting('aiProvider', _aiProvider);
+    }
     _aiApiKey =
         await _storage.loadSetting<String>('aiApiKey', defaultValue: '') ?? '';
     _aiBaseUrl =
         await _storage.loadSetting<String>('aiBaseUrl', defaultValue: '') ?? '';
     _aiModel =
         await _storage.loadSetting<String>(
-              'aiModel',
-              defaultValue: defaultGeminiModel,
-            ) ??
-            defaultGeminiModel;
-    _aiModel = _normalizeModelForProvider(_aiProvider, _aiModel);
-    _aiSystemPrompt = await _storage.loadSetting<String>('aiSystemPrompt',
-            defaultValue:
-                '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。') ??
+          'aiModel',
+          defaultValue: defaultGeminiModel,
+        ) ??
+        defaultGeminiModel;
+    _aiModel = _normalizeModel(_aiModel);
+    _aiSystemPrompt =
+        await _storage.loadSetting<String>(
+          'aiSystemPrompt',
+          defaultValue: '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。',
+        ) ??
         '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
-    _customAiPrompts = await _storage.loadSetting<List<String>>(
-            'customAiPrompts',
-            defaultValue: [
-              '详细解析本题',
-              '为什么其他选项是错误的？',
-              '这道题考察的知识点是什么？',
-            ]) ??
-        [
-          '详细解析本题',
-          '为什么其他选项是错误的？',
-          '这道题考察的知识点是什么？',
-        ];
-    _selectionMenuItems = await _storage.loadSetting<List<String>>(
-            'selectionMenuItems',
-            defaultValue: [
-              'Copy',
-              'Select All',
-            ]) ??
-        [
-          'Copy',
-          'Select All',
-        ];
+    _customAiPrompts =
+        await _storage.loadSetting<List<String>>(
+          'customAiPrompts',
+          defaultValue: ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'],
+        ) ??
+        ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'];
+    _selectionMenuItems =
+        await _storage.loadSetting<List<String>>(
+          'selectionMenuItems',
+          defaultValue: ['Copy', 'Select All'],
+        ) ??
+        ['Copy', 'Select All'];
     notifyListeners();
   }
 
@@ -233,17 +231,6 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setAiProvider(String provider) async {
-    _aiProvider = provider;
-    await _storage.saveSetting('aiProvider', provider);
-    final normalizedModel = _normalizeModelForProvider(provider, _aiModel);
-    if (normalizedModel != _aiModel) {
-      _aiModel = normalizedModel;
-      await _storage.saveSetting('aiModel', normalizedModel);
-    }
-    notifyListeners();
-  }
-
   Future<void> setAiApiKey(String key) async {
     _aiApiKey = key;
     await _storage.saveSetting('aiApiKey', key);
@@ -262,14 +249,8 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _normalizeModelForProvider(String provider, String model) {
-    if (provider == 'gemini') {
-      return model.startsWith('gemini-') ? model : defaultGeminiModel;
-    }
-    if (provider == 'claude') {
-      return model.startsWith('claude-') ? model : defaultClaudeModel;
-    }
-    return model;
+  String _normalizeModel(String model) {
+    return model.startsWith('gemini-') ? model : defaultGeminiModel;
   }
 
   Future<void> setAiSystemPrompt(String prompt) async {

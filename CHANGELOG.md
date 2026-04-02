@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2] - 2026-04-02
+
+### Changed
+- **AI Chat Sessions**: Session history is now included in follow-up requests so each chat continues as a real multi-turn conversation instead of independent single-turn prompts.
+- **Gemini Context Reuse**: Added Gemini cached context handling to avoid repeatedly sending the fixed question context and system prompt on every turn within the same chat session.
+- **Claude Removal**: Removed Anthropic Claude support from the AI service and settings UI, leaving Gemini as the available chat provider while automatically migrating old saved Claude selections back to Gemini.
+
 ## [1.2.1] - 2026-03-15
 
 ### Fixed

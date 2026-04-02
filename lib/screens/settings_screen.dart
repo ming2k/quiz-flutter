@@ -12,9 +12,7 @@ class SettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settings),
-      ),
+      appBar: AppBar(title: Text(l10n.settings)),
       body: Consumer<SettingsProvider>(
         builder: (context, settings, child) {
           return ListView(
@@ -65,9 +63,12 @@ class SettingsScreen extends StatelessWidget {
               ),
               ListTile(
                 title: Text(l10n.testQuestionCount),
-                subtitle: Text('${settings.testQuestionCount} ${l10n.questions}'),
+                subtitle: Text(
+                  '${settings.testQuestionCount} ${l10n.questions}',
+                ),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showTestQuestionCountDialog(context, settings, l10n),
+                onTap: () =>
+                    _showTestQuestionCountDialog(context, settings, l10n),
               ),
               const Divider(),
 
@@ -78,12 +79,6 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(l10n.aiChatScrollToBottomDesc),
                 value: settings.aiChatScrollToBottom,
                 onChanged: (value) => settings.setAiChatScrollToBottom(value),
-              ),
-              ListTile(
-                title: Text(l10n.aiProvider),
-                subtitle: Text(settings.aiProvider),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showAiProviderDialog(context, settings),
               ),
               ListTile(
                 title: Text(l10n.aiApiKey),
@@ -98,7 +93,9 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 title: Text(l10n.aiBaseUrl),
                 subtitle: Text(
-                  settings.aiBaseUrl.isEmpty ? l10n.aiBaseUrlDefault : settings.aiBaseUrl,
+                  settings.aiBaseUrl.isEmpty
+                      ? l10n.aiBaseUrlDefault
+                      : settings.aiBaseUrl,
                 ),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showAiBaseUrlDialog(context, settings),
@@ -126,7 +123,10 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showSelectionMenuOrderDialog(BuildContext context, SettingsProvider settings) {
+  void _showSelectionMenuOrderDialog(
+    BuildContext context,
+    SettingsProvider settings,
+  ) {
     final l10n = AppLocalizations.of(context);
     List<String> items = List.from(settings.selectionMenuItems);
 
@@ -147,11 +147,13 @@ class SettingsScreen extends StatelessWidget {
                 });
               },
               children: items
-                  .map((item) => ListTile(
-                        key: ValueKey(item),
-                        title: Text(item),
-                        trailing: const Icon(Icons.drag_handle),
-                      ))
+                  .map(
+                    (item) => ListTile(
+                      key: ValueKey(item),
+                      title: Text(item),
+                      trailing: const Icon(Icons.drag_handle),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -179,9 +181,9 @@ class SettingsScreen extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -286,36 +288,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  void _showAiProviderDialog(BuildContext context, SettingsProvider settings) {
-    final l10n = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.aiProvider),
-        children: [
-          RadioListTile<String>(
-            title: const Text('Google Gemini'),
-            value: 'gemini',
-            groupValue: settings.aiProvider,
-            onChanged: (value) {
-              settings.setAiProvider(value!);
-              Navigator.pop(context);
-            },
-          ),
-          RadioListTile<String>(
-            title: const Text('Anthropic Claude'),
-            value: 'claude',
-            groupValue: settings.aiProvider,
-            onChanged: (value) {
-              settings.setAiProvider(value!);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showApiKeyDialog(BuildContext context, SettingsProvider settings) {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController(text: settings.aiApiKey);
@@ -326,9 +298,7 @@ class SettingsScreen extends StatelessWidget {
         title: Text(l10n.aiApiKey),
         content: TextField(
           controller: controller,
-          decoration: InputDecoration(
-            hintText: l10n.enterApiKey,
-          ),
+          decoration: InputDecoration(hintText: l10n.enterApiKey),
           obscureText: true,
         ),
         actions: [
@@ -350,32 +320,25 @@ class SettingsScreen extends StatelessWidget {
 
   void _showModelDialog(BuildContext context, SettingsProvider settings) {
     final l10n = AppLocalizations.of(context);
-    final models = settings.aiProvider == 'gemini'
-        ? [
-            SettingsProvider.defaultGeminiModel,
-            'gemini-3.1-pro-preview',
-            'gemini-3-flash-preview',
-            'gemini-2.5-flash',
-            'gemini-2.5-pro',
-          ]
-        : [
-            SettingsProvider.defaultClaudeModel,
-            'claude-3-haiku-20240307',
-            'claude-3-sonnet-20240229',
-            'claude-3-opus-20240229',
-          ];
+    final models = [
+      SettingsProvider.defaultGeminiModel,
+      'gemini-3.1-pro-preview',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ];
     final children = <Widget>[
       ...models.map(
-          (model) => RadioListTile<String>(
-            title: Text(model),
-            value: model,
-            groupValue: settings.aiModel,
-            onChanged: (value) {
-              settings.setAiModel(value!);
-              Navigator.pop(context);
-            },
-          ),
+        (model) => RadioListTile<String>(
+          title: Text(model),
+          value: model,
+          groupValue: settings.aiModel,
+          onChanged: (value) {
+            settings.setAiModel(value!);
+            Navigator.pop(context);
+          },
         ),
+      ),
     ];
     children.add(
       SimpleDialogOption(
@@ -408,10 +371,8 @@ class SettingsScreen extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.aiModel),
-        children: children,
-      ),
+      builder: (context) =>
+          SimpleDialog(title: Text(l10n.aiModel), children: children),
     );
   }
 
@@ -428,7 +389,7 @@ class SettingsScreen extends StatelessWidget {
           autofocus: true,
           decoration: const InputDecoration(
             hintText: 'gemini-3.1-flash-lite-preview',
-            helperText: 'You can enter any provider-supported model ID.',
+            helperText: 'You can enter any Gemini-compatible model ID.',
           ),
         ),
         actions: [
@@ -480,17 +441,20 @@ class SettingsScreen extends StatelessWidget {
           height: 150,
           width: double.maxFinite,
           child: CupertinoPicker(
-            scrollController: FixedExtentScrollController(initialItem: initialIndex),
+            scrollController: FixedExtentScrollController(
+              initialItem: initialIndex,
+            ),
             itemExtent: 32,
             onSelectedItemChanged: (index) {
               selectedCount = options[index];
             },
-            children: options.map((count) => Center(
-              child: Text(
-                '$count',
-                style: const TextStyle(fontSize: 20),
-              ),
-            )).toList(),
+            children: options
+                .map(
+                  (count) => Center(
+                    child: Text('$count', style: const TextStyle(fontSize: 20)),
+                  ),
+                )
+                .toList(),
           ),
         ),
         actions: [

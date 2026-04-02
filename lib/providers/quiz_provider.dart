@@ -57,12 +57,14 @@ class QuizProvider extends ChangeNotifier {
   List<Book> get books => List.unmodifiable(_books);
   List<Section> get sections => List.unmodifiable(_sections);
   List<Question> get questions => List.unmodifiable(_filteredQuestions);
-  List<ChatMessage> get currentAiChatHistory => List.unmodifiable(_currentChatHistory);
+  List<ChatMessage> get currentAiChatHistory =>
+      List.unmodifiable(_currentChatHistory);
   List<ChatSession> get chatSessions => List.unmodifiable(_chatSessions);
   int? get currentChatSessionId => _currentChatSessionId;
 
   // AI Stream getters
-  AiStreamState? get currentAiStream => _currentChatSessionId != null ? _aiStreams[_currentChatSessionId] : null;
+  AiStreamState? get currentAiStream =>
+      _currentChatSessionId != null ? _aiStreams[_currentChatSessionId] : null;
   bool get isAiStreaming => currentAiStream?.isLoading ?? false;
   String get aiStreamingResponse => currentAiStream?.streamingResponse ?? '';
   AiStreamState? getAiStream(int sessionId) => _aiStreams[sessionId];
@@ -116,17 +118,18 @@ class QuizProvider extends ChangeNotifier {
       _currentChatSessionId = null;
       return;
     }
-    
+
     // Load sessions for this question
     _chatSessions = await _db.getChatSessions(_currentQuestion!.id);
-    
+
     if (_chatSessions.isNotEmpty) {
       // If we don't have a current session selected, or the selected one isn't in the list
       // (e.g. changed question), select the most recent one (first in list).
-      if (_currentChatSessionId == null || !_chatSessions.any((s) => s.id == _currentChatSessionId)) {
+      if (_currentChatSessionId == null ||
+          !_chatSessions.any((s) => s.id == _currentChatSessionId)) {
         _currentChatSessionId = _chatSessions.first.id;
       }
-      
+
       if (_currentChatSessionId != null) {
         _currentChatHistory = await _db.getChatHistory(_currentChatSessionId!);
       }
@@ -134,26 +137,26 @@ class QuizProvider extends ChangeNotifier {
       _currentChatSessionId = null;
       _currentChatHistory = [];
     }
-    
+
     notifyListeners();
   }
-  
+
   Future<void> createChatSession([String title = 'New Chat']) async {
     if (_currentQuestion == null) return;
-    
+
     // In the new multi-session logic, we DON'T cancel other sessions
     // Each session can have its own background stream.
-    
+
     final session = await _db.createChatSession(_currentQuestion!.id, title);
     _chatSessions.insert(0, session); // Add to top
     _currentChatSessionId = session.id;
     _currentChatHistory = [];
     notifyListeners();
   }
-  
+
   Future<void> switchChatSession(int sessionId) async {
     if (_currentChatSessionId == sessionId) return;
-    
+
     _currentChatSessionId = sessionId;
     _currentChatHistory = await _db.getChatHistory(sessionId);
     notifyListeners();
@@ -162,10 +165,11 @@ class QuizProvider extends ChangeNotifier {
   Future<void> deleteChatSession(int sessionId) async {
     // Cancel stream if active
     await cancelAiChat(sessionId);
-    
+    _aiService.clearSessionContext(sessionId);
+
     await _db.deleteChatSession(sessionId);
     _chatSessions.removeWhere((s) => s.id == sessionId);
-    
+
     if (_currentChatSessionId == sessionId) {
       if (_chatSessions.isNotEmpty) {
         _currentChatSessionId = _chatSessions.first.id;
@@ -191,14 +195,20 @@ class QuizProvider extends ChangeNotifier {
       await createChatSession(title);
     } else if (message.isUser) {
       // If it's the first user message in a "New Chat", update the title
-      final currentSession = _chatSessions.firstWhere((s) => s.id == _currentChatSessionId);
-      if (currentSession.title == 'New Chat' || currentSession.title == 'Chat' || currentSession.title == '新对话') {
+      final currentSession = _chatSessions.firstWhere(
+        (s) => s.id == _currentChatSessionId,
+      );
+      if (currentSession.title == 'New Chat' ||
+          currentSession.title == 'Chat' ||
+          currentSession.title == '新对话') {
         String newTitle = message.text.replaceAll('\n', ' ').trim();
         if (newTitle.length > 30) newTitle = '${newTitle.substring(0, 30)}...';
         if (newTitle.isNotEmpty) {
           await _db.updateChatSessionTitle(_currentChatSessionId!, newTitle);
           // Update in-memory list
-          final index = _chatSessions.indexWhere((s) => s.id == _currentChatSessionId);
+          final index = _chatSessions.indexWhere(
+            (s) => s.id == _currentChatSessionId,
+          );
           if (index != -1) {
             _chatSessions[index] = ChatSession(
               id: currentSession.id,
@@ -233,7 +243,7 @@ class QuizProvider extends ChangeNotifier {
     if (_currentChatSessionId == null) {
       await createChatSession();
     }
-    
+
     final sessionId = _currentChatSessionId!;
     final questionId = _currentQuestion!.id;
 
@@ -251,12 +261,10 @@ class QuizProvider extends ChangeNotifier {
 
     // Add user message
     await addAiChatMessage(ChatMessage(text: userMessage, isUser: true));
+    final sessionHistory = List<ChatMessage>.from(_currentChatHistory);
 
     // Create stream state
-    final state = AiStreamState(
-      questionId: questionId,
-      sessionId: sessionId,
-    );
+    final state = AiStreamState(questionId: questionId, sessionId: sessionId);
     _aiStreams[sessionId] = state;
     notifyListeners();
 
@@ -266,6 +274,8 @@ class QuizProvider extends ChangeNotifier {
         options: {for (var c in _currentQuestion!.choices) c.key: c.content},
         correctAnswer: _currentQuestion!.answer,
         userQuestion: userMessage,
+        history: sessionHistory,
+        sessionId: sessionId,
       );
 
       final subscription = stream.listen(
@@ -276,28 +286,31 @@ class QuizProvider extends ChangeNotifier {
         onError: (error) async {
           state.isLoading = false;
           state.error = error.toString().replaceAll("Exception: ", "");
-          
+
           // Save error to DB for this session
-          await _db.saveChatMessage(sessionId, ChatMessage(
-            text: 'Error: ${state.error}',
-            isUser: false,
-          ));
-          
+          await _db.saveChatMessage(
+            sessionId,
+            ChatMessage(text: 'Error: ${state.error}', isUser: false),
+          );
+
           // If this session is still current, add to in-memory history
           if (_currentChatSessionId == sessionId) {
-            _currentChatHistory.add(ChatMessage(
-              text: 'Error: ${state.error}',
-              isUser: false,
-            ));
+            _currentChatHistory.add(
+              ChatMessage(text: 'Error: ${state.error}', isUser: false),
+            );
           }
-          
+
           _aiStreams.remove(sessionId);
           notifyListeners();
         },
         onDone: () async {
           state.isLoading = false;
           if (state.streamingResponse.isNotEmpty && state.error == null) {
-            await _saveStreamResponse(sessionId, state.streamingResponse, questionId);
+            await _saveStreamResponse(
+              sessionId,
+              state.streamingResponse,
+              questionId,
+            );
           }
           _aiStreams.remove(sessionId);
           notifyListeners();
@@ -309,36 +322,47 @@ class QuizProvider extends ChangeNotifier {
     } catch (e) {
       state.isLoading = false;
       state.error = e.toString().replaceAll("Exception: ", "");
-      
-      await _db.saveChatMessage(sessionId, ChatMessage(
-        text: 'Error: ${state.error}',
-        isUser: false,
-      ));
-      
+
+      await _db.saveChatMessage(
+        sessionId,
+        ChatMessage(text: 'Error: ${state.error}', isUser: false),
+      );
+
       if (_currentChatSessionId == sessionId) {
-        _currentChatHistory.add(ChatMessage(
-          text: 'Error: ${state.error}',
-          isUser: false,
-        ));
+        _currentChatHistory.add(
+          ChatMessage(text: 'Error: ${state.error}', isUser: false),
+        );
       }
-      
+
       _aiStreams.remove(sessionId);
       notifyListeners();
     }
   }
 
   /// Save completed stream response to chat history
-  Future<void> _saveStreamResponse(int sessionId, String response, int questionId) async {
+  Future<void> _saveStreamResponse(
+    int sessionId,
+    String response,
+    int questionId,
+  ) async {
     // Check if this session is still current
     if (_currentChatSessionId == sessionId) {
-      await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
+      await _db.saveChatMessage(
+        sessionId,
+        ChatMessage(text: response, isUser: false),
+      );
       // Only add to history if it's not already the last message
-      if (_currentChatHistory.isEmpty || _currentChatHistory.last.text != response || _currentChatHistory.last.isUser) {
+      if (_currentChatHistory.isEmpty ||
+          _currentChatHistory.last.text != response ||
+          _currentChatHistory.last.isUser) {
         _currentChatHistory.add(ChatMessage(text: response, isUser: false));
       }
     } else {
       // Save directly to DB for background session
-      await _db.saveChatMessage(sessionId, ChatMessage(text: response, isUser: false));
+      await _db.saveChatMessage(
+        sessionId,
+        ChatMessage(text: response, isUser: false),
+      );
     }
   }
 
@@ -348,14 +372,14 @@ class QuizProvider extends ChangeNotifier {
     if (state != null) {
       final questionId = state.questionId;
       final partialResponse = state.streamingResponse;
-      
+
       await state.cancel();
-      
+
       // Save partial response if exists
       if (partialResponse.isNotEmpty) {
         await _saveStreamResponse(sessionId, partialResponse, questionId);
       }
-      
+
       _aiStreams.remove(sessionId);
       notifyListeners();
     }
@@ -375,7 +399,7 @@ class QuizProvider extends ChangeNotifier {
     try {
       await _db.deleteBook(bookId);
       await loadBooks(); // Reload list
-      
+
       // If deleted book was selected, clear selection
       if (_currentBook?.id == bookId) {
         _currentBook = null;
@@ -399,11 +423,18 @@ class QuizProvider extends ChangeNotifier {
     try {
       _books = await _db.getBooks();
 
-      final bool isSampleInitialized = await _storage.loadSetting<bool>('is_sample_quiz_initialized', defaultValue: false) ?? false;
+      final bool isSampleInitialized =
+          await _storage.loadSetting<bool>(
+            'is_sample_quiz_initialized',
+            defaultValue: false,
+          ) ??
+          false;
 
       // Import built-in sample package on first run if no books exist and not yet initialized
       if (_books.isEmpty && !isSampleInitialized) {
-        final result = await PackageService().importBuiltInPackage('assets/packages/sample-quiz.zip');
+        final result = await PackageService().importBuiltInPackage(
+          'assets/packages/sample-quiz.zip',
+        );
         if (!result.success && result.errorMessage != null) {
           _error = result.errorMessage;
         } else {
@@ -448,19 +479,23 @@ class QuizProvider extends ChangeNotifier {
       _currentBook = book;
       _sections = await _db.getSections(book.id);
       _questions = await _db.getQuestions(book.id);
-      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
+      _filteredQuestions = _questions
+          .where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty)
+          .toList();
       _currentPartitionId = 'all';
 
       // Load package image path if applicable
       if (!book.filename.endsWith('.json') && !book.filename.endsWith('.db')) {
-         _currentPackageImagePath = await PackageService().getPackageImagePath(book.filename);
+        _currentPackageImagePath = await PackageService().getPackageImagePath(
+          book.filename,
+        );
       } else {
-         _currentPackageImagePath = null;
+        _currentPackageImagePath = null;
       }
 
       // Load saved progress (metadata like current index/mode)
       _progress = await _storage.loadProgress(book.filename);
-      
+
       // Load answers and marks from SQLite
       final dbAnswers = await _db.getUserAnswers(book.id);
       final dbMarks = await _db.getMarkedQuestions(book.id);
@@ -477,7 +512,7 @@ class QuizProvider extends ChangeNotifier {
         _resetState();
         _progress = UserProgress(bankFilename: book.filename);
       }
-      
+
       await _storage.saveLastOpenedBank(book.filename);
 
       // _restoreProgress calls _applyPartitionFilter which populates _filteredQuestions
@@ -525,22 +560,25 @@ class QuizProvider extends ChangeNotifier {
   // Partition (Section) Selection
   Future<void> selectPartition(String partitionId, {int? index}) async {
     _currentPartitionId = partitionId;
-    
+
     if (index != null) {
       _currentIndex = index;
     } else {
       // Try to restore index for this partition and current mode
       int savedIndex = 0;
       if (partitionId == 'all') {
-         savedIndex = _progress?.modePositions[_appMode] ?? 0;
+        savedIndex = _progress?.modePositions[_appMode] ?? 0;
       } else {
-         savedIndex = _progress?.partitionModePositions[partitionId]?[_appMode] ?? 0;
+        savedIndex =
+            _progress?.partitionModePositions[partitionId]?[_appMode] ?? 0;
       }
       _currentIndex = savedIndex;
     }
 
     if (partitionId == 'all') {
-      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
+      _filteredQuestions = _questions
+          .where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty)
+          .toList();
     } else {
       _applyPartitionFilter();
     }
@@ -557,9 +595,11 @@ class QuizProvider extends ChangeNotifier {
 
   void _applyPartitionFilter() {
     _filteredQuestions = _questions
-        .where((q) =>
-            q.sectionId == _currentPartitionId &&
-            (q.choices.isNotEmpty || q.answer.isNotEmpty))
+        .where(
+          (q) =>
+              q.sectionId == _currentPartitionId &&
+              (q.choices.isNotEmpty || q.answer.isNotEmpty),
+        )
         .toList();
   }
 
@@ -568,7 +608,9 @@ class QuizProvider extends ChangeNotifier {
     _appMode = mode;
 
     if (_currentPartitionId == 'all') {
-      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
+      _filteredQuestions = _questions
+          .where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty)
+          .toList();
     } else {
       _applyPartitionFilter();
     }
@@ -576,14 +618,15 @@ class QuizProvider extends ChangeNotifier {
     if (index != null) {
       _currentIndex = index;
     } else {
-       // Try to restore index for this mode and current partition
-       int savedIndex = 0;
-       if (_currentPartitionId == 'all') {
-         savedIndex = _progress?.modePositions[mode] ?? 0;
-       } else {
-         savedIndex = _progress?.partitionModePositions[_currentPartitionId]?[mode] ?? 0;
-       }
-       _currentIndex = savedIndex;
+      // Try to restore index for this mode and current partition
+      int savedIndex = 0;
+      if (_currentPartitionId == 'all') {
+        savedIndex = _progress?.modePositions[mode] ?? 0;
+      } else {
+        savedIndex =
+            _progress?.partitionModePositions[_currentPartitionId]?[mode] ?? 0;
+      }
+      _currentIndex = savedIndex;
     }
 
     // Ensure index is within bounds (in case question list changed)
@@ -631,10 +674,7 @@ class QuizProvider extends ChangeNotifier {
     final isCorrect =
         selected.toUpperCase() == _currentQuestion!.answer.toUpperCase();
 
-    final answer = UserAnswer(
-      selected: selected,
-      isCorrect: isCorrect,
-    );
+    final answer = UserAnswer(selected: selected, isCorrect: isCorrect);
 
     _userAnswers[_currentQuestion!.id] = answer;
     await _db.saveUserAnswer(_currentBook!.id, _currentQuestion!.id, answer);
@@ -682,7 +722,7 @@ class QuizProvider extends ChangeNotifier {
       _currentQuestion = _filteredQuestions[0];
       await _loadChatHistory();
     }
-    
+
     await _db.clearBookProgress(_currentBook!.id);
     await _saveProgress();
     notifyListeners();
@@ -698,13 +738,15 @@ class QuizProvider extends ChangeNotifier {
         validIndices.add(i);
       }
     }
-    
+
     validIndices.shuffle(random);
 
-    _testQuestionIndices =
-        validIndices.take(min(questionCount, validIndices.length)).toList();
-    _filteredQuestions =
-        _testQuestionIndices.map((i) => _questions[i]).toList();
+    _testQuestionIndices = validIndices
+        .take(min(questionCount, validIndices.length))
+        .toList();
+    _filteredQuestions = _testQuestionIndices
+        .map((i) => _questions[i])
+        .toList();
 
     _currentIndex = 0;
     if (_filteredQuestions.isNotEmpty) {
@@ -749,7 +791,9 @@ class QuizProvider extends ChangeNotifier {
     // Restore normal mode
     _appMode = AppMode.practice;
     if (_currentPartitionId == 'all') {
-      _filteredQuestions = _questions.where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty).toList();
+      _filteredQuestions = _questions
+          .where((q) => q.choices.isNotEmpty || q.answer.isNotEmpty)
+          .toList();
     } else {
       _applyPartitionFilter();
     }
@@ -781,10 +825,12 @@ class QuizProvider extends ChangeNotifier {
     if (_currentBook == null) return;
 
     // Create or update the maps
-    final newModePositions =
-        Map<AppMode, int>.from(_progress?.modePositions ?? {});
-    final newPartitionModePositions =
-        Map<String, Map<AppMode, int>>.from(_progress?.partitionModePositions ?? {});
+    final newModePositions = Map<AppMode, int>.from(
+      _progress?.modePositions ?? {},
+    );
+    final newPartitionModePositions = Map<String, Map<AppMode, int>>.from(
+      _progress?.partitionModePositions ?? {},
+    );
 
     // Update current positions
     if (_currentPartitionId == 'all') {
@@ -796,11 +842,13 @@ class QuizProvider extends ChangeNotifier {
       newPartitionModePositions[_currentPartitionId] = {};
     }
     // We need to copy the inner map too if we are modifying it
-    newPartitionModePositions[_currentPartitionId] =
-        Map<AppMode, int>.from(newPartitionModePositions[_currentPartitionId]!);
+    newPartitionModePositions[_currentPartitionId] = Map<AppMode, int>.from(
+      newPartitionModePositions[_currentPartitionId]!,
+    );
     newPartitionModePositions[_currentPartitionId]![_appMode] = _currentIndex;
 
-    final progress = _progress?.copyWith(
+    final progress =
+        _progress?.copyWith(
           appMode: _appMode,
           currentQuestionIndex: _currentIndex,
           currentPartitionId: _currentPartitionId,
