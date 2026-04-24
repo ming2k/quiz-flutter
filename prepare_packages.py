@@ -45,14 +45,22 @@ def transform_question(q):
         'content': fix_assets_path(fix_latex(q.get('content', ''))),
         'explanation': fix_assets_path(fix_latex(q.get('explanation', ''))),
     }
-    
+
+    # Handle v2 optional fields
+    if 'tags' in q and q['tags']:
+        formatted_q['tags'] = q['tags']
+    if 'difficulty' in q:
+        formatted_q['difficulty'] = q['difficulty']
+    if 'note' in q and q['note']:
+        formatted_q['note'] = q['note']
+
     # Handle choices
     if 'choices' in q and q['choices']:
         choices = []
         for c in q['choices']:
             choices.append({
                 'key': c['key'],
-                'html': fix_assets_path(fix_latex(c.get('text', c.get('html', ''))))
+                'content': fix_assets_path(fix_latex(c.get('text', c.get('html', c.get('content', '')))))
             })
         formatted_q['choices'] = choices
         formatted_q['answer'] = q.get('answer', '')
@@ -62,7 +70,7 @@ def transform_question(q):
         formatted_q['questions'] = [transform_question(child) for child in q['children']]
     elif 'questions' in q and q['questions']:
         formatted_q['questions'] = [transform_question(sub_q) for sub_q in q['questions']]
-        
+
     return formatted_q
 
 def find_asset_references(data):
@@ -108,6 +116,7 @@ def convert_and_package(input_path, output_dir, assets_src_dir):
         })
 
     package_data = {
+        'protocol_version': '2.0',
         'subject_name_zh': book.get('subject_name_zh', ''),
         'subject_name_en': book.get('subject_name_en', ''),
         'chapters': chapters_nested,

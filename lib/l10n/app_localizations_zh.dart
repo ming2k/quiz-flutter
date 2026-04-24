@@ -9,10 +9,10 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'Quiz';
+  String get appTitle => 'Mnema';
 
   @override
-  String get appSubtitle => '通用扩展题库练习系统';
+  String get appSubtitle => '优雅的学习伴侣';
 
   @override
   String get selectQuestionBank => '选择题库';
@@ -93,6 +93,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get analysis => '解析';
 
   @override
+  String get answer => '答案';
+
+  @override
   String get aiExplain => 'AI 解析';
 
   @override
@@ -144,6 +147,62 @@ class AppLocalizationsZh extends AppLocalizations {
   String get viewHistory => '查看历史';
 
   @override
+  String get showAnswer => '显示答案';
+
+  @override
+  String get memoryReview => '记忆复习';
+
+  @override
+  String get complete => '完成';
+
+  @override
+  String get noReviewQuestions => '没有可复习的题目';
+
+  @override
+  String get reviewComplete => '今日复习完成！';
+
+  @override
+  String reviewedCount(int count) {
+    return '本次复习了 $count 道题目';
+  }
+
+  @override
+  String get srsAgain => '忘记';
+
+  @override
+  String get srsHard => '困难';
+
+  @override
+  String get srsGood => '良好';
+
+  @override
+  String get srsEasy => '简单';
+
+  @override
+  String get review => '复习';
+
+  @override
+  String get srsNew => '新';
+
+  @override
+  String get srsLearning => '学';
+
+  @override
+  String get srsReview => '复';
+
+  @override
+  String get reviewMistakes => '复习错题';
+
+  @override
+  String get retakeTest => '重新测试';
+
+  @override
+  String get about => '关于';
+
+  @override
+  String get version => '版本';
+
+  @override
   String get settings => '设置';
 
   @override
@@ -165,7 +224,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get language => '语言';
 
   @override
-  String get quizExperience => '练习体验';
+  String get languageChinese => '中文';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get quizExperience => '学习体验';
 
   @override
   String get autoAdvance => '自动下一题';
@@ -190,6 +255,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get hapticFeedbackDesc => '答题时振动提示';
+
+  @override
+  String get continuousFeedback => '连续反馈';
+
+  @override
+  String get continuousFeedbackDesc => '连击时递进音效和振动';
 
   @override
   String get confettiEffect => '彩带效果';
@@ -259,6 +330,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get clear => '清除';
+
+  @override
+  String get noQuestions => '暂无题目';
+
+  @override
+  String get noBooks => '还没有题包';
+
+  @override
+  String get noBooksDesc => '导入题包开始学习';
 
   @override
   String get importPackage => '导入题包';

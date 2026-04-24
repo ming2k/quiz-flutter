@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/models.dart';
+import '../providers/providers.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/dopamine_click_wrapper.dart';
+import 'practice_screen.dart';
 
 class TestResultScreen extends StatelessWidget {
   final TestHistoryEntry result;
+  final VoidCallback? onReviewMistakes;
+  final VoidCallback? onRetake;
 
   const TestResultScreen({
     super.key,
     required this.result,
+    this.onReviewMistakes,
+    this.onRetake,
   });
 
   @override
@@ -58,7 +65,7 @@ class TestResultScreen extends StatelessWidget {
             Text(
               l10n.accuracy,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
             const SizedBox(height: 32),
@@ -69,7 +76,7 @@ class TestResultScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    icon: Icons.help_outline,
+                    icon: Icons.format_list_numbered,
                     label: l10n.totalQuestions,
                     value: result.totalQuestions.toString(),
                     color: colorScheme.primary,
@@ -103,10 +110,10 @@ class TestResultScreen extends StatelessWidget {
                 Expanded(
                   child: _buildStatCard(
                     context,
-                    icon: Icons.remove_circle_outline,
+                    icon: Icons.radio_button_unchecked,
                     label: l10n.unansweredCount,
                     value: result.unansweredCount.toString(),
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -119,7 +126,7 @@ class TestResultScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    const Icon(Icons.timer, color: Colors.orange),
+                    Icon(Icons.timer, color: AppTheme.warning),
                     const SizedBox(width: 12),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,7 +134,7 @@ class TestResultScreen extends StatelessWidget {
                         Text(
                           l10n.timeTaken,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                         ),
                         Text(
@@ -142,7 +149,7 @@ class TestResultScreen extends StatelessWidget {
                     Text(
                       result.formattedDate,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -152,6 +159,31 @@ class TestResultScreen extends StatelessWidget {
             const SizedBox(height: 32),
 
             // Actions
+            if (result.wrongCount > 0)
+              DopamineClickWrapper(
+                child: ElevatedButton.icon(
+                  onPressed: onReviewMistakes ?? () {},
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    backgroundColor: colorScheme.errorContainer,
+                    foregroundColor: colorScheme.error,
+                  ),
+                  icon: const Icon(Icons.error_outline),
+                  label: Text(l10n.reviewMistakes),
+                ),
+              ),
+            if (result.wrongCount > 0) const SizedBox(height: 12),
+            DopamineClickWrapper(
+              child: OutlinedButton.icon(
+                onPressed: onRetake ?? () {},
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+                icon: const Icon(Icons.replay),
+                label: Text(l10n.retakeTest),
+              ),
+            ),
+            const SizedBox(height: 12),
             DopamineClickWrapper(
               key: const Key('result_home_wrapper'),
               child: ElevatedButton(
@@ -194,7 +226,7 @@ class TestResultScreen extends StatelessWidget {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],

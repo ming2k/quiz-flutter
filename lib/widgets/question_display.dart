@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import '../models/models.dart';
 import '../l10n/app_localizations.dart';
 import 'markdown_content.dart';
 import 'dopamine_click_wrapper.dart';
 
-class QuizQuestionDisplay extends StatelessWidget {
+class QuestionDisplay extends StatelessWidget {
   final Question question;
   final String? selectedOption;
   final bool showAnswer;
   final bool showAnalysis;
+  final bool hideOptions;
   final String? imageBasePath;
   final void Function(String)? onOptionSelected;
+  final String? highlightedOption;
   final Color primaryColor;
   final Color errorColor;
   final Color successColor;
   final Color surfaceColor;
   final Color textColor;
 
-  const QuizQuestionDisplay({
+  const QuestionDisplay({
     super.key,
     required this.question,
     this.selectedOption,
     this.showAnswer = false,
     this.showAnalysis = true,
+    this.hideOptions = false,
     this.imageBasePath,
     this.onOptionSelected,
+    this.highlightedOption,
     required this.primaryColor,
     required this.errorColor,
     required this.successColor,
@@ -34,14 +39,18 @@ class QuizQuestionDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      key: const Key('quiz_question_listview'),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+    // Using Column instead of ListView because QuestionDisplay is often
+    // placed inside another scrollable (PageView, SingleChildScrollView,
+    // or ListView). Nesting scrollables causes unbounded-height errors.
+    return Column(
+      key: const Key('question_question_column'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Parent Content (Passage) for Reading Comprehension
         if (question.parentContent != null) ...[
           Container(
-            key: const Key('quiz_question_parent_container'),
+            key: const Key('question_question_parent_container'),
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
@@ -50,23 +59,26 @@ class QuizQuestionDisplay extends StatelessWidget {
               border: Border.all(color: textColor.withValues(alpha: 0.1)),
             ),
             child: MarkdownContent(
-              key: const Key('quiz_question_parent_markdown'),
+              key: const Key('question_question_parent_markdown'),
               content: question.parentContent!,
               imageBasePath: imageBasePath,
               fontSize: 16,
               textColor: textColor,
             ),
           ),
-          const Divider(key: Key('quiz_question_parent_divider'), height: 32),
+          const Divider(
+            key: Key('question_question_parent_divider'),
+            height: 32,
+          ),
         ],
 
         // Question Content (Stem)
         Padding(
-          key: const Key('quiz_question_stem_padding'),
+          key: const Key('question_question_stem_padding'),
           padding: const EdgeInsets.only(bottom: 16),
           child: MarkdownContent(
-            key: const Key('quiz_question_stem_markdown'),
-            content: question.content,
+            key: const Key('question_question_stem_markdown'),
+            content: question.displayFront,
             imageBasePath: imageBasePath,
             fontSize: 18,
             textColor: textColor,
@@ -74,40 +86,71 @@ class QuizQuestionDisplay extends StatelessWidget {
         ),
 
         // Options
-        ...question.choiceEntries.map((entry) => _buildOptionCard(context, entry)),
+        if (!hideOptions)
+          ...question.choiceEntries.map(
+            (entry) => _buildOptionCard(context, entry),
+          ),
+
+        if (showAnswer && !hideOptions && question.needsAnswerReveal) ...[
+          const SizedBox(height: 8, key: Key('question_answer_spacer_top')),
+          _buildAnswerCard(context),
+        ],
 
         // Explanation
-        if (showAnswer && question.explanation.isNotEmpty) ...[
-          const SizedBox(height: 20, key: Key('quiz_question_explanation_spacer_top')),
+        if (showAnswer &&
+            !hideOptions &&
+            !question.needsAnswerReveal &&
+            question.explanation.isNotEmpty) ...[
+          const SizedBox(
+            height: 20,
+            key: Key('question_question_explanation_spacer_top'),
+          ),
           _buildExplanationCard(context),
         ],
-        const SizedBox(height: 32, key: Key('quiz_question_bottom_spacer')),
+        const SizedBox(height: 32, key: Key('question_question_bottom_spacer')),
       ],
     );
   }
 
-  Widget _buildOptionCard(BuildContext context, MapEntry<String, String> entry) {
+  Widget _buildOptionCard(
+    BuildContext context,
+    MapEntry<String, String> entry,
+  ) {
     final bool isSelected = selectedOption == entry.key;
-    final bool isCorrect = entry.key.toUpperCase() == question.answer.toUpperCase();
-    
+    final bool isCorrect =
+        entry.key.toUpperCase() == question.answer.toUpperCase();
+    final bool isHighlighted =
+        !showAnswer && highlightedOption == entry.key && !isSelected;
+
     Color cardColor = surfaceColor;
     Color labelColor = Theme.of(context).colorScheme.surfaceContainerHighest;
     Color labelTextColor = textColor;
+    Color borderColor = textColor.withValues(alpha: 0.12);
+    double borderWidth = 1;
 
     if (showAnswer) {
       if (isCorrect) {
         cardColor = successColor.withValues(alpha: 0.1);
         labelColor = successColor;
         labelTextColor = Colors.white;
+        borderColor = labelColor;
       } else if (isSelected) {
         cardColor = errorColor.withValues(alpha: 0.1);
         labelColor = errorColor;
         labelTextColor = Colors.white;
+        borderColor = labelColor;
       }
     } else if (isSelected) {
       cardColor = primaryColor.withValues(alpha: 0.1);
       labelColor = primaryColor;
       labelTextColor = Colors.white;
+      borderColor = labelColor;
+    } else if (isHighlighted) {
+      cardColor = primaryColor.withValues(alpha: 0.06);
+      labelColor = primaryColor.withValues(alpha: 0.18);
+      labelTextColor = primaryColor;
+      borderColor = primaryColor;
+      borderWidth = 2;
     }
 
     return Padding(
@@ -132,9 +175,7 @@ class QuizQuestionDisplay extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: isSelected || (showAnswer && isCorrect) 
-                    ? Border.all(color: labelColor, width: 1)
-                    : Border.all(color: textColor.withValues(alpha: 0.12), width: 1),
+                border: Border.all(color: borderColor, width: borderWidth),
               ),
               child: Row(
                 key: Key('option_row_${entry.key}'),
@@ -186,7 +227,7 @@ class QuizQuestionDisplay extends StatelessWidget {
 
   Widget _buildExplanationCard(BuildContext context) {
     return Container(
-      key: const Key('quiz_explanation_container'),
+      key: const Key('question_explanation_container'),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: surfaceColor,
@@ -194,17 +235,25 @@ class QuizQuestionDisplay extends StatelessWidget {
         border: Border.all(color: textColor.withValues(alpha: 0.12)),
       ),
       child: Column(
-        key: const Key('quiz_explanation_column'),
+        key: const Key('question_explanation_column'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            key: const Key('quiz_explanation_header_row'),
+            key: const Key('question_explanation_header_row'),
             children: [
-              const Icon(Icons.lightbulb_outline, key: Key('quiz_explanation_icon'), color: Colors.orange, size: 20),
-              const SizedBox(width: 8, key: Key('quiz_explanation_header_spacer')),
+              Icon(
+                Icons.lightbulb_outline,
+                key: const Key('question_explanation_icon'),
+                color: AppTheme.warning,
+                size: 20,
+              ),
+              const SizedBox(
+                width: 8,
+                key: Key('question_explanation_header_spacer'),
+              ),
               Text(
                 AppLocalizations.of(context).analysis,
-                key: const Key('quiz_explanation_title'),
+                key: const Key('question_explanation_title'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: primaryColor,
@@ -213,10 +262,60 @@ class QuizQuestionDisplay extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8, key: Key('quiz_explanation_content_spacer')),
+          const SizedBox(
+            height: 8,
+            key: Key('question_explanation_content_spacer'),
+          ),
           MarkdownContent(
-            key: const Key('quiz_explanation_markdown'),
+            key: const Key('question_explanation_markdown'),
             content: question.explanation,
+            imageBasePath: imageBasePath,
+            fontSize: 15,
+            textColor: textColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnswerCard(BuildContext context) {
+    return Container(
+      key: const Key('question_answer_container'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: successColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: successColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        key: const Key('question_answer_column'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            key: const Key('question_answer_header_row'),
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                key: const Key('question_answer_icon'),
+                color: successColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8, key: Key('question_answer_header_gap')),
+              Text(
+                AppLocalizations.of(context).answer,
+                key: const Key('question_answer_title'),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: successColor,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8, key: Key('question_answer_content_gap')),
+          MarkdownContent(
+            key: const Key('question_answer_markdown'),
+            content: question.displayBack,
             imageBasePath: imageBasePath,
             fontSize: 15,
             textColor: textColor,

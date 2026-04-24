@@ -5,19 +5,16 @@ enum AppMode { practice, test }
 class UserAnswer {
   final String? selected;
   final bool? isCorrect;
-  final bool markedWrong;
 
   UserAnswer({
     this.selected,
     this.isCorrect,
-    this.markedWrong = false,
   });
 
   factory UserAnswer.fromJson(Map<String, dynamic> json) {
     return UserAnswer(
       selected: json['selected'] as String?,
       isCorrect: json['isCorrect'] as bool?,
-      markedWrong: json['markedWrong'] as bool? ?? false,
     );
   }
 
@@ -25,19 +22,16 @@ class UserAnswer {
     return {
       'selected': selected,
       'isCorrect': isCorrect,
-      'markedWrong': markedWrong,
     };
   }
 
   UserAnswer copyWith({
     String? selected,
     bool? isCorrect,
-    bool? markedWrong,
   }) {
     return UserAnswer(
       selected: selected ?? this.selected,
       isCorrect: isCorrect ?? this.isCorrect,
-      markedWrong: markedWrong ?? this.markedWrong,
     );
   }
 }

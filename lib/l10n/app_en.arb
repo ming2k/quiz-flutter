@@ -1,8 +1,8 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Quiz",
-  "appSubtitle": "General Extensible Quiz Framework",
+  "appTitle": "Mnema",
+  "appSubtitle": "An Elegant Learning Companion",
 
   "selectQuestionBank": "Select Question Bank",
   "selectMode": "Select Mode",
@@ -32,6 +32,7 @@
   "showAnalysis": "Show Analysis",
   "hideAnalysis": "Hide Analysis",
   "analysis": "Analysis",
+  "answer": "Answer",
   "aiExplain": "AI Explain",
 
   "overview": "Overview",
@@ -51,6 +52,30 @@
   "timeTaken": "Time",
   "backToHome": "Back to Home",
   "viewHistory": "View History",
+  "showAnswer": "Show Answer",
+  "memoryReview": "Memory Review",
+  "complete": "Complete",
+  "noReviewQuestions": "No questions to review",
+  "aiExplain": "AI Explain",
+  "reviewComplete": "Review Complete!",
+  "reviewedCount": "Reviewed {count} questions",
+  "@reviewedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "srsAgain": "Again",
+  "srsHard": "Hard",
+  "srsGood": "Good",
+  "srsEasy": "Easy",
+  "review": "Review",
+  "srsNew": "New",
+  "srsLearning": "Learning",
+  "srsReview": "Due",
+  "reviewMistakes": "Review Mistakes",
+  "retakeTest": "Retake Test",
+  "about": "About",
+  "version": "Version",
 
   "settings": "Settings",
   "appearance": "Appearance",
@@ -59,7 +84,9 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "language": "Language",
-  "quizExperience": "Quiz Experience",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "quizExperience": "Study Experience",
   "autoAdvance": "Auto Advance",
   "autoAdvanceDesc": "Auto advance after correct answer",
   "showAnalysisOption": "Show Analysis",
@@ -68,6 +95,8 @@
   "soundEffectsDesc": "Play sounds on answer",
   "hapticFeedback": "Haptic Feedback",
   "hapticFeedbackDesc": "Vibrate on answer",
+  "continuousFeedback": "Continuous Feedback",
+  "continuousFeedbackDesc": "Escalating sound & haptics on streaks",
   "confettiEffect": "Confetti Effect",
   "confettiEffectDesc": "Show confetti on correct answer",
   "aiSettings": "AI Settings",
@@ -95,6 +124,9 @@
   "ok": "OK",
   "clear": "Clear",
 
+  "noQuestions": "No questions available",
+  "noBooks": "No Books Yet",
+  "noBooksDesc": "Import a study package to get started",
   "importPackage": "Import Package",
   "importFailed": "Import Failed",
   "importSuccess": "Successfully imported \"{packageName}\"",

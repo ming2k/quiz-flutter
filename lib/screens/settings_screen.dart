@@ -21,16 +21,10 @@ class SettingsScreen extends StatelessWidget {
               _buildSectionHeader(context, l10n.appearance),
               _buildThemeTile(context, settings, l10n),
               _buildLanguageTile(context, settings, l10n),
-              const Divider(),
+              const Divider(indent: 16, endIndent: 16),
 
-              // Quiz Experience Section
+              // Study Experience Section
               _buildSectionHeader(context, l10n.quizExperience),
-              SwitchListTile(
-                title: Text(l10n.memorizeMode),
-                subtitle: Text(l10n.memorizeModeDesc),
-                value: settings.memorizeMode,
-                onChanged: (value) => settings.setMemorizeMode(value),
-              ),
               SwitchListTile(
                 title: Text(l10n.autoAdvance),
                 subtitle: Text(l10n.autoAdvanceDesc),
@@ -56,6 +50,12 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) => settings.setHapticFeedback(value),
               ),
               SwitchListTile(
+                title: Text(l10n.continuousFeedback),
+                subtitle: Text(l10n.continuousFeedbackDesc),
+                value: settings.continuousFeedback,
+                onChanged: (value) => settings.setContinuousFeedback(value),
+              ),
+              SwitchListTile(
                 title: Text(l10n.confettiEffect),
                 subtitle: Text(l10n.confettiEffectDesc),
                 value: settings.confettiEffect,
@@ -70,7 +70,7 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () =>
                     _showTestQuestionCountDialog(context, settings, l10n),
               ),
-              const Divider(),
+              const Divider(indent: 16, endIndent: 16),
 
               // AI Settings Section
               _buildSectionHeader(context, l10n.aiSettings),
@@ -79,6 +79,12 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(l10n.aiChatScrollToBottomDesc),
                 value: settings.aiChatScrollToBottom,
                 onChanged: (value) => settings.setAiChatScrollToBottom(value),
+              ),
+              ListTile(
+                title: const Text('AI Provider'),
+                subtitle: Text(settings.aiProvider.toUpperCase()),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showProviderDialog(context, settings),
               ),
               ListTile(
                 title: Text(l10n.aiApiKey),
@@ -106,7 +112,9 @@ class SettingsScreen extends StatelessWidget {
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showModelDialog(context, settings),
               ),
-              const Divider(),
+              const Divider(indent: 16, endIndent: 16),
+
+              const Divider(indent: 16, endIndent: 16),
 
               // Text Selection Section
               _buildSectionHeader(context, l10n.textSelectionMenu),
@@ -115,6 +123,15 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(settings.selectionMenuItems.join(', ')),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showSelectionMenuOrderDialog(context, settings),
+              ),
+              const Divider(indent: 16, endIndent: 16),
+
+              // About Section
+              _buildSectionHeader(context, l10n.about),
+              ListTile(
+                title: Text(l10n.version),
+                subtitle: const Text('1.2.2'),
+                leading: const Icon(Icons.info_outline),
               ),
             ],
           );
@@ -255,7 +272,7 @@ class SettingsScreen extends StatelessWidget {
   ) {
     return ListTile(
       title: Text(l10n.language),
-      subtitle: Text(settings.locale == 'zh-CN' ? '中文' : 'English'),
+      subtitle: Text(settings.locale == 'zh-CN' ? l10n.languageChinese : l10n.languageEnglish),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         showDialog(
@@ -264,7 +281,7 @@ class SettingsScreen extends StatelessWidget {
             title: Text(l10n.language),
             children: [
               RadioListTile<String>(
-                title: const Text('中文'),
+                title: Text(l10n.languageChinese),
                 value: 'zh-CN',
                 groupValue: settings.locale,
                 onChanged: (value) {
@@ -318,15 +335,58 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  void _showProviderDialog(BuildContext context, SettingsProvider settings) {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('AI Provider'),
+        children: [
+          RadioListTile<String>(
+            title: const Text('Gemini (Google)'),
+            subtitle: const Text('gemini-3.1-flash-lite-preview'),
+            value: 'gemini',
+            groupValue: settings.aiProvider,
+            onChanged: (value) {
+              settings.setAiProvider(value!);
+              Navigator.pop(context);
+            },
+          ),
+          RadioListTile<String>(
+            title: const Text('Kimi (Moonshot AI)'),
+            subtitle: const Text('kimi-k2.6'),
+            value: 'kimi',
+            groupValue: settings.aiProvider,
+            onChanged: (value) {
+              settings.setAiProvider(value!);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showModelDialog(BuildContext context, SettingsProvider settings) {
     final l10n = AppLocalizations.of(context);
-    final models = [
-      SettingsProvider.defaultGeminiModel,
-      'gemini-3.1-pro-preview',
-      'gemini-3-flash-preview',
-      'gemini-2.5-flash',
-      'gemini-2.5-pro',
-    ];
+    final List<String> models;
+    switch (settings.aiProvider) {
+      case 'kimi':
+        models = [
+          SettingsProvider.defaultKimiModel,
+          'kimi-k2.5',
+          'kimi-k2-turbo-preview',
+        ];
+        break;
+      case 'gemini':
+      default:
+        models = [
+          SettingsProvider.defaultGeminiModel,
+          'gemini-3.1-pro-preview',
+          'gemini-3-flash-preview',
+          'gemini-2.5-flash',
+          'gemini-2.5-pro',
+        ];
+    }
     final children = <Widget>[
       ...models.map(
         (model) => RadioListTile<String>(
@@ -387,9 +447,11 @@ class SettingsScreen extends StatelessWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'gemini-3.1-flash-lite-preview',
-            helperText: 'You can enter any Gemini-compatible model ID.',
+          decoration: InputDecoration(
+            hintText: settings.aiProvider == 'kimi'
+                ? 'kimi-k2.6'
+                : 'gemini-3.1-flash-lite-preview',
+            helperText: 'You can enter any compatible model ID.',
           ),
         ),
         actions: [

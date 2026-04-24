@@ -1,12 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:quiz_app/main.dart';
+import 'package:mnema/main.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 
 void main() {
-  testWidgets('App launches smoke test', (WidgetTester tester) async {
-    await tester.pumpWidget(const QuizApp());
-    await tester.pump();
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
 
-    expect(find.text('船员考试题库'), findsOneWidget);
+  testWidgets('App launches smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(const MnemaApp());
+
+    expect(find.text('Mnema'), findsOneWidget);
   });
 }

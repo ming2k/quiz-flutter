@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../models/models.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 import '../widgets/stats_display.dart';
@@ -23,7 +24,7 @@ class _OverviewSheetState extends State<OverviewSheet> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_scrollController == null) {
-      final quiz = context.read<QuizProvider>();
+      final quiz = context.read<PracticeProvider>();
       final currentIndex = quiz.currentIndex;
 
       // Grid calculations
@@ -64,7 +65,7 @@ class _OverviewSheetState extends State<OverviewSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: SafeArea(
-        child: Consumer<QuizProvider>(
+        child: Consumer<PracticeProvider>(
           builder: (context, quiz, child) {
             // Build filtered index list
             final filteredIndices = _buildFilteredIndices(quiz);
@@ -179,8 +180,8 @@ class _OverviewSheetState extends State<OverviewSheet> {
                   wrongCount: quiz.wrongCount,
                   markedCount: quiz.markedCount,
                   accuracy: quiz.accuracy,
-                  isTestMode: quiz.isTestActive,
-                  testStartTime: quiz.testStartTime,
+                  isTestMode: false,
+                  testStartTime: 0,
                 ),
               ],
             );
@@ -190,7 +191,7 @@ class _OverviewSheetState extends State<OverviewSheet> {
     );
   }
 
-  List<int> _buildFilteredIndices(QuizProvider quiz) {
+  List<int> _buildFilteredIndices(PracticeProvider quiz) {
     final total = quiz.totalQuestions;
     final indices = <int>[];
     for (int i = 0; i < total; i++) {

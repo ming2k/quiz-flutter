@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/chat_message.dart';
 
-enum AiProvider { gemini, vertex }
+/// Callback for configuring AiService before use
+typedef AiServiceConfigurator = void Function(AiService service);
+
+enum AiProvider { gemini, vertex, kimi }
 
 class _GeminiContextCacheEntry {
   final String name;
@@ -25,7 +28,7 @@ class AiService {
   AiProvider _provider = AiProvider.gemini;
   String _model = 'gemini-3.1-flash-lite-preview';
   String _systemPrompt =
-      '你是一名海航专业且母语为中文的学霸，精通海航英语、航海学（气象学、航海仪器）、船舶结构与货运、船舶操纵与避碰、船舶管理等知识。熟读 UK Hydrographic Office 的 ADMIRALTY 出版物和海图，掌握 COLREG 规范、STCW 公约、SOLAS 等。你的任务是帮助我快速学习相关知识，回答内容精炼易懂，最后总结关键内容方便记忆。';
+      "You are a maritime education expert fluent in English. You specialize in maritime English, navigation (meteorology, navigational instruments), ship structure and cargo handling, ship maneuvering and collision avoidance, and ship management. You are familiar with UK Hydrographic Office ADMIRALTY publications, charts, COLREG, STCW, and SOLAS. Your task is to help me learn relevant knowledge efficiently. Keep answers concise, easy to understand, and summarize key points for memorization.";
   final Map<int, _GeminiContextCacheEntry> _geminiContextCache = {};
 
   void configure({
@@ -83,6 +86,13 @@ class AiService {
         stream = _callVertexStream(
           questionContext: questionContext,
           history: effectiveHistory,
+        );
+        break;
+      case AiProvider.kimi:
+        stream = _callKimiStream(
+          questionContext: questionContext,
+          history: effectiveHistory,
+          sessionId: sessionId,
         );
         break;
     }
@@ -199,7 +209,94 @@ class AiService {
         }
       }
     } on TimeoutException {
-      throw Exception('连接超时 (30s)，请检查网络');
+      throw Exception('Connection timed out (30s). Please check your network.');
+    } catch (e) {
+      throw Exception('AI Service Error: $e');
+    } finally {
+      client.close();
+    }
+  }
+
+  Stream<String> _callKimiStream({
+    required String questionContext,
+    required List<ChatMessage> history,
+    int? sessionId,
+  }) async* {
+    final host = (_baseUrl != null && _baseUrl!.isNotEmpty)
+        ? _baseUrl!
+        : 'https://api.moonshot.cn';
+    final cleanHost = host.endsWith('/')
+        ? host.substring(0, host.length - 1)
+        : host;
+
+    final url = Uri.parse('$cleanHost/v1/chat/completions');
+
+    final client = http.Client();
+    http.StreamedResponse response;
+
+    try {
+      final messages = <Map<String, dynamic>>[];
+
+      // System message with system prompt and question context
+      messages.add({
+        'role': 'system',
+        'content': _buildInlineContextSystemPrompt(questionContext),
+      });
+
+      // History messages
+      for (final message in history) {
+        messages.add({
+          'role': message.isUser ? 'user' : 'assistant',
+          'content': message.text,
+        });
+      }
+
+      final request = http.Request('POST', url)
+        ..headers['Content-Type'] = 'application/json'
+        ..headers['Authorization'] = 'Bearer $_apiKey'
+        ..body = jsonEncode({
+          'model': _model,
+          'messages': messages,
+          'stream': true,
+          'temperature': 0.7,
+          'max_tokens': 2048,
+        });
+
+      response = await client
+          .send(request)
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        final body = await response.stream.bytesToString();
+        throw Exception('Kimi API error: ${response.statusCode} - $body');
+      }
+
+      await for (final line
+          in response.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
+        if (line.startsWith('data: ')) {
+          final jsonStr = line.substring(6).trim();
+          if (jsonStr.isEmpty || jsonStr == '[DONE]') continue;
+          try {
+            final data = jsonDecode(jsonStr);
+            final choices = data['choices'] as List?;
+            if (choices != null && choices.isNotEmpty) {
+              final delta = choices[0]['delta'] as Map<String, dynamic>?;
+              if (delta != null) {
+                final content = delta['content'] as String?;
+                if (content != null && content.isNotEmpty) {
+                  yield content;
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors for partial chunks
+          }
+        }
+      }
+    } on TimeoutException {
+      throw Exception('Connection timed out (30s). Please check your network.');
     } catch (e) {
       throw Exception('AI Service Error: $e');
     } finally {
@@ -234,7 +331,7 @@ class AiService {
         ..headers['x-goog-api-key'] = _apiKey!
         ..body = jsonEncode({
           'model': 'models/$_model',
-          'displayName': 'quiz-session-$sessionId',
+          'displayName': 'mnema-session-$sessionId',
           'systemInstruction': {
             'parts': [
               {'text': _systemPrompt},
@@ -299,7 +396,7 @@ class AiService {
     final fallbackPrompt =
         (userQuestion != null && userQuestion.trim().isNotEmpty)
         ? userQuestion.trim()
-        : '请详细解析这道题，说明为什么答案是正确的。';
+        : 'Please analyze this question in detail and explain why the correct answer is right.';
 
     return [ChatMessage(text: fallbackPrompt, isUser: true)];
   }
@@ -330,20 +427,20 @@ class AiService {
     required String correctAnswer,
   }) {
     final buffer = StringBuffer();
-    buffer.writeln('题目：');
+    buffer.writeln('Question:');
     buffer.writeln(_convertToMarkdown(questionStem));
     buffer.writeln();
-    buffer.writeln('选项：');
+    buffer.writeln('Options:');
     options.forEach((key, value) {
       buffer.writeln('$key. ${_convertToMarkdown(value)}');
     });
     buffer.writeln();
-    buffer.writeln('正确答案：$correctAnswer');
+    buffer.writeln('Correct answer: $correctAnswer');
     return buffer.toString();
   }
 
   String _buildInlineContextSystemPrompt(String questionContext) {
-    return '$_systemPrompt\n\n以下是当前对话的固定题目上下文，请始终以此为准：\n\n$questionContext';
+    return '$_systemPrompt\n\nThe following question context is fixed for this conversation. Always use it as reference:\n\n$questionContext';
   }
 
   String _convertToMarkdown(String html) {

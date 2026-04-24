@@ -1,19 +1,30 @@
 import 'package:audioplayers/audioplayers.dart';
+import '../feedback_event.dart';
+import '../sound_theme.dart';
 
-class SoundService {
-  static final SoundService _instance = SoundService._internal();
-  factory SoundService() => _instance;
-  SoundService._internal();
+/// The default sound theme.
+///
+/// Maps feedback events to the built-in asset sounds:
+/// - [FeedbackEvent.correct] / [FeedbackEvent.streak1] → `streak_1.mp3`
+/// - [FeedbackEvent.streak2] → `streak_2.mp3`
+/// - [FeedbackEvent.streak3] → `streak_3.mp3`
+/// - [FeedbackEvent.streak4] → `streak_4.mp3`
+/// - [FeedbackEvent.streak5] → `streak_5.mp3`
+/// - [FeedbackEvent.streakAce] → `streak_ace.mp3`
+/// - [FeedbackEvent.wrong] → `wrong.mp3`
+class DefaultSoundTheme implements SoundTheme {
+  @override
+  String get id => 'default';
+
+  @override
+  String get displayName => 'Default';
 
   AudioPlayer? _wrongPlayer;
   final List<AudioPlayer> _streakPlayers = [];
   AudioPlayer? _acePlayer;
   bool _initialized = false;
 
-  int _currentStreak = 0;
-
-  int get currentStreak => _currentStreak;
-
+  @override
   Future<void> init() async {
     if (_initialized) return;
 
@@ -51,43 +62,7 @@ class SoundService {
     _initialized = true;
   }
 
-  /// Increment streak
-  void incrementStreak() {
-    _currentStreak++;
-  }
-
-  /// Play correct answer sound based on current streak
-  Future<void> playCorrect() async {
-    if (!_initialized) return;
-
-    AudioPlayer? player;
-    if (_currentStreak >= 6) {
-      player = _acePlayer;
-    } else if (_currentStreak > 0) {
-      player = _streakPlayers[_currentStreak - 1];
-    }
-
-    if (player != null) {
-      await player.stop();
-      await player.seek(Duration.zero);
-      await player.resume();
-    }
-  }
-
-  /// Play wrong answer sound
-  Future<void> playWrong() async {
-    if (!_initialized || _wrongPlayer == null) return;
-
-    await _wrongPlayer!.stop();
-    await _wrongPlayer!.seek(Duration.zero);
-    await _wrongPlayer!.resume();
-  }
-
-  /// Reset streak without playing sound (e.g., when changing questions manually)
-  void resetStreak() {
-    _currentStreak = 0;
-  }
-
+  @override
   Future<void> dispose() async {
     await _wrongPlayer?.dispose();
     for (final player in _streakPlayers) {
@@ -99,6 +74,26 @@ class SoundService {
     _streakPlayers.clear();
     _acePlayer = null;
     _initialized = false;
-    _currentStreak = 0;
+  }
+
+  @override
+  Future<void> play(FeedbackEvent event) async {
+    if (!_initialized) return;
+
+    final AudioPlayer? player = switch (event) {
+      FeedbackEvent.wrong => _wrongPlayer,
+      FeedbackEvent.correct || FeedbackEvent.streak1 => _streakPlayers.isNotEmpty ? _streakPlayers[0] : null,
+      FeedbackEvent.streak2 => _streakPlayers.length > 1 ? _streakPlayers[1] : null,
+      FeedbackEvent.streak3 => _streakPlayers.length > 2 ? _streakPlayers[2] : null,
+      FeedbackEvent.streak4 => _streakPlayers.length > 3 ? _streakPlayers[3] : null,
+      FeedbackEvent.streak5 => _streakPlayers.length > 4 ? _streakPlayers[4] : null,
+      FeedbackEvent.streakAce => _acePlayer,
+    };
+
+    if (player != null) {
+      await player.stop();
+      await player.seek(Duration.zero);
+      await player.resume();
+    }
   }
 }

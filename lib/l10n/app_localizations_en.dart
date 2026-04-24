@@ -9,10 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Quiz';
+  String get appTitle => 'Mnema';
 
   @override
-  String get appSubtitle => 'General Extensible Quiz Framework';
+  String get appSubtitle => 'An Elegant Learning Companion';
 
   @override
   String get selectQuestionBank => 'Select Question Bank';
@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get analysis => 'Analysis';
 
   @override
+  String get answer => 'Answer';
+
+  @override
   String get aiExplain => 'AI Explain';
 
   @override
@@ -144,6 +147,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewHistory => 'View History';
 
   @override
+  String get showAnswer => 'Show Answer';
+
+  @override
+  String get memoryReview => 'Memory Review';
+
+  @override
+  String get complete => 'Complete';
+
+  @override
+  String get noReviewQuestions => 'No questions to review';
+
+  @override
+  String get reviewComplete => 'Review Complete!';
+
+  @override
+  String reviewedCount(int count) {
+    return 'Reviewed $count questions';
+  }
+
+  @override
+  String get srsAgain => 'Again';
+
+  @override
+  String get srsHard => 'Hard';
+
+  @override
+  String get srsGood => 'Good';
+
+  @override
+  String get srsEasy => 'Easy';
+
+  @override
+  String get review => 'Review';
+
+  @override
+  String get srsNew => 'New';
+
+  @override
+  String get srsLearning => 'Learning';
+
+  @override
+  String get srsReview => 'Due';
+
+  @override
+  String get reviewMistakes => 'Review Mistakes';
+
+  @override
+  String get retakeTest => 'Retake Test';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get version => 'Version';
+
+  @override
   String get settings => 'Settings';
 
   @override
@@ -165,7 +224,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get language => 'Language';
 
   @override
-  String get quizExperience => 'Quiz Experience';
+  String get languageChinese => '中文';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get quizExperience => 'Study Experience';
 
   @override
   String get autoAdvance => 'Auto Advance';
@@ -190,6 +255,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hapticFeedbackDesc => 'Vibrate on answer';
+
+  @override
+  String get continuousFeedback => 'Continuous Feedback';
+
+  @override
+  String get continuousFeedbackDesc => 'Escalating sound & haptics on streaks';
 
   @override
   String get confettiEffect => 'Confetti Effect';
@@ -260,6 +331,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clear => 'Clear';
+
+  @override
+  String get noQuestions => 'No questions available';
+
+  @override
+  String get noBooks => 'No Books Yet';
+
+  @override
+  String get noBooksDesc => 'Import a study package to get started';
 
   @override
   String get importPackage => 'Import Package';

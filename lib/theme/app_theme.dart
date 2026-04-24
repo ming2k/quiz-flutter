@@ -121,6 +121,21 @@ class AppTheme {
     return colorScheme.outlineVariant;
   }
   
+  /// Returns a stable, distinct color for a book based on its id.
+  static Color bookColor(int bookId) {
+    const colors = [
+      Color(0xFF1976D2), // Blue
+      Color(0xFF388E3C), // Green
+      Color(0xFFF57C00), // Orange
+      Color(0xFF7B1FA2), // Purple
+      Color(0xFFC62828), // Red
+      Color(0xFF00796B), // Teal
+      Color(0xFF5D4037), // Brown
+      Color(0xFF455A64), // Blue Grey
+    ];
+    return colors[bookId % colors.length];
+  }
+
   // Helpers for legacy access if needed, but prefer Theme.of(context)
   static Color get primaryLight => seedColor;
   static Color get primaryDark => const Color(0xFF90CAF9); // Approximation

@@ -4,6 +4,7 @@ import '../services/services.dart';
 
 class SettingsProvider extends ChangeNotifier {
   static const String defaultGeminiModel = 'gemini-3.1-flash-lite-preview';
+  static const String defaultKimiModel = 'kimi-k2.6';
 
   final StorageService _storage = StorageService();
 
@@ -13,12 +14,12 @@ class SettingsProvider extends ChangeNotifier {
 
   // Quiz Experience
   AppMode _lastAppMode = AppMode.practice;
-  bool _memorizeMode = false;
   bool _autoAdvance = true;
   bool _showAnalysis = true;
   bool _showNotes = true;
   bool _soundEffects = true;
   bool _hapticFeedback = true;
+  bool _continuousFeedback = true;
   bool _confettiEffect = true;
 
   // Test Settings
@@ -30,20 +31,24 @@ class SettingsProvider extends ChangeNotifier {
   String _aiApiKey = '';
   String _aiBaseUrl = '';
   String _aiModel = defaultGeminiModel;
-  String _aiSystemPrompt = '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
-  List<String> _customAiPrompts = ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'];
+  String _aiSystemPrompt = 'You are a professional maritime education expert, skilled at explaining nautical exam questions. Please explain questions and answers in a concise and clear manner.';
+  List<String> _customAiPrompts = [
+    'Detailed analysis of this question',
+    'Why are the other options wrong?',
+    'What knowledge points does this question test?',
+  ];
   List<String> _selectionMenuItems = ['Copy', 'Select All'];
 
   // Getters
   AppMode get lastAppMode => _lastAppMode;
   ThemeMode get themeMode => _themeMode;
   String get locale => _locale;
-  bool get memorizeMode => _memorizeMode;
   bool get autoAdvance => _autoAdvance;
   bool get showAnalysis => _showAnalysis;
   bool get showNotes => _showNotes;
   bool get soundEffects => _soundEffects;
   bool get hapticFeedback => _hapticFeedback;
+  bool get continuousFeedback => _continuousFeedback;
   bool get confettiEffect => _confettiEffect;
   int get testQuestionCount => _testQuestionCount;
   bool get aiChatScrollToBottom => _aiChatScrollToBottom;
@@ -51,6 +56,7 @@ class SettingsProvider extends ChangeNotifier {
   String get aiBaseUrl => _aiBaseUrl;
   String get aiModel => _aiModel;
   String get aiSystemPrompt => _aiSystemPrompt;
+  String get aiProvider => _aiProvider;
   List<String> get customAiPrompts => List.unmodifiable(_customAiPrompts);
   List<String> get selectionMenuItems => List.unmodifiable(_selectionMenuItems);
 
@@ -77,9 +83,6 @@ class SettingsProvider extends ChangeNotifier {
 
     _locale =
         await _storage.loadSetting<String>('locale', defaultValue: '') ?? '';
-    _memorizeMode =
-        await _storage.loadSetting<bool>('memorizeMode', defaultValue: false) ??
-        false;
     _autoAdvance =
         await _storage.loadSetting<bool>('autoAdvance', defaultValue: true) ??
         true;
@@ -95,6 +98,12 @@ class SettingsProvider extends ChangeNotifier {
     _hapticFeedback =
         await _storage.loadSetting<bool>(
           'hapticFeedback',
+          defaultValue: true,
+        ) ??
+        true;
+    _continuousFeedback =
+        await _storage.loadSetting<bool>(
+          'continuousFeedback',
           defaultValue: true,
         ) ??
         true;
@@ -122,7 +131,7 @@ class SettingsProvider extends ChangeNotifier {
           defaultValue: 'gemini',
         ) ??
         'gemini';
-    if (_aiProvider == 'claude') {
+    if (_aiProvider != 'gemini' && _aiProvider != 'kimi') {
       _aiProvider = 'gemini';
       await _storage.saveSetting('aiProvider', _aiProvider);
     }
@@ -140,15 +149,23 @@ class SettingsProvider extends ChangeNotifier {
     _aiSystemPrompt =
         await _storage.loadSetting<String>(
           'aiSystemPrompt',
-          defaultValue: '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。',
+          defaultValue: 'You are a professional maritime education expert, skilled at explaining nautical exam questions. Please explain questions and answers in a concise and clear manner.',
         ) ??
-        '你是一位专业的海事教育专家，擅长解释航海相关的考试题目。请用简洁明了的方式解释问题和答案。';
+        'You are a professional maritime education expert, skilled at explaining nautical exam questions. Please explain questions and answers in a concise and clear manner.';
     _customAiPrompts =
         await _storage.loadSetting<List<String>>(
           'customAiPrompts',
-          defaultValue: ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'],
+          defaultValue: [
+            'Detailed analysis of this question',
+            'Why are the other options wrong?',
+            'What knowledge points does this question test?',
+          ],
         ) ??
-        ['详细解析本题', '为什么其他选项是错误的？', '这道题考察的知识点是什么？'];
+        [
+          'Detailed analysis of this question',
+          'Why are the other options wrong?',
+          'What knowledge points does this question test?',
+        ];
     _selectionMenuItems =
         await _storage.loadSetting<List<String>>(
           'selectionMenuItems',
@@ -174,12 +191,6 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setLocale(String locale) async {
     _locale = locale;
     await _storage.saveSetting('locale', locale);
-    notifyListeners();
-  }
-
-  Future<void> setMemorizeMode(bool value) async {
-    _memorizeMode = value;
-    await _storage.saveSetting('memorizeMode', value);
     notifyListeners();
   }
 
@@ -210,6 +221,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setHapticFeedback(bool value) async {
     _hapticFeedback = value;
     await _storage.saveSetting('hapticFeedback', value);
+    notifyListeners();
+  }
+
+  Future<void> setContinuousFeedback(bool value) async {
+    _continuousFeedback = value;
+    await _storage.saveSetting('continuousFeedback', value);
     notifyListeners();
   }
 
@@ -250,7 +267,30 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   String _normalizeModel(String model) {
-    return model.startsWith('gemini-') ? model : defaultGeminiModel;
+    switch (_aiProvider) {
+      case 'gemini':
+        return model.startsWith('gemini-') ? model : defaultGeminiModel;
+      case 'kimi':
+        return model.startsWith('kimi-') ? model : defaultKimiModel;
+      default:
+        return model;
+    }
+  }
+
+  Future<void> setAiProvider(String provider) async {
+    _aiProvider = provider;
+    await _storage.saveSetting('aiProvider', provider);
+    // Reset model to provider default when switching
+    switch (provider) {
+      case 'gemini':
+        _aiModel = defaultGeminiModel;
+        break;
+      case 'kimi':
+        _aiModel = defaultKimiModel;
+        break;
+    }
+    await _storage.saveSetting('aiModel', _aiModel);
+    notifyListeners();
   }
 
   Future<void> setAiSystemPrompt(String prompt) async {

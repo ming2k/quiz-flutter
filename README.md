@@ -1,19 +1,38 @@
-# Quiz App
+# Mnema
 
-A general, extensible quiz framework built with Flutter. Supports multiple study modes, AI-powered explanations, Markdown/LaTeX rendering, and a custom quiz package format.
+Mnema is a general, extensible learning framework built with Flutter. Supports multiple study modes, AI-powered explanations, Markdown/LaTeX rendering, and a custom quiz package format.
 
 ## Features
 
-- **Multiple study modes** — Practice, Review, Memorize, and timed Test
-- **AI explanations** — Streaming chat powered by Gemini, Claude, or any OpenAI-compatible endpoint
+- **Multiple study modes** — Practice, Review (SRS), and timed Test
+- **AI explanations** — Streaming chat powered by Gemini, Kimi, or any OpenAI-compatible endpoint
 - **Rich content** — Markdown and LaTeX (via `flutter_math_fork`) in questions and explanations
-- **Quiz packages** — Import `.zip` / `.quizpkg` files; a sample package is bundled at first launch
+- **Study packages** — Import `.zip` / `.mnemapkg` files; a sample package is bundled at first launch
 - **Progress tracking** — SQLite-backed per-question history, test results, and streaks
+- **SRS / Spaced Repetition** — SM-2 algorithm with four rating levels
 - **i18n** — English and Chinese (Simplified); follows system locale by default
 - **Theming** — Light / Dark / System, Material 3 color roles throughout
-- **Feedback** — Optional haptic feedback, sound effects, and confetti on streaks
+- **Feedback** — Modular sound & haptic system with streak escalation
+
+📖 See [`docs/features.md`](docs/features.md) for a detailed feature overview and roadmap.
 
 ---
+
+## Documentation
+
+| Document | Audience | Content |
+|----------|----------|---------|
+| [`docs/features.md`](docs/features.md) | Users & Developers | Feature overview, roadmap |
+| [`docs/design/`](docs/design/README.md) | Developers & Designers | Learning-mode, question-type, question-structure, and collection design |
+| [`docs/design_system.md`](docs/design_system.md) | Developers & Designers | Colors, typography, spacing, icons, empty states |
+| [`docs/ui_guidelines.md`](docs/ui_guidelines.md) | Developers | Coding standards for UI/UX |
+| [`docs/srs_algorithm.md`](docs/srs_algorithm.md) | Users & Developers | SM-2 spaced repetition explanation |
+| [`docs/architecture.md`](docs/architecture.md) | Developers | Technical architecture |
+| [`docs/package_creator_guide.md`](docs/package_creator_guide.md) | Content Creators | Step-by-step guide to creating and sharing packages |
+| [`docs/package_protocol.md`](docs/package_protocol.md) | Content Creators & Tool Developers | Technical package format specification |
+| [`docs/package_schema.json`](docs/package_schema.json) | Tool Developers | JSON Schema for automated validation |
+| [`docs/ai_integration.md`](docs/ai_integration.md) | Developers | AI provider integration |
+| [`docs/testing.md`](docs/testing.md) | Developers | Testing guide |
 
 ## Getting Started
 
@@ -26,6 +45,22 @@ A general, extensible quiz framework built with Flutter. Supports multiple study
 | Android SDK | API 21+ (minSdk) |
 
 Install Flutter: https://docs.flutter.dev/get-started/install
+
+### Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Android** | ✅ Primary target | All features are designed and tested for Android |
+| **Linux Desktop** | ⚠️ Available for debugging only | See warning below |
+| **iOS / Web / Windows / macOS** | ❌ Not supported | No platform directories configured |
+
+> **Linux Desktop Warning**
+>
+> The Linux desktop target is retained for local debugging convenience, but **Android is the primary development focus**.
+>
+> Building for Linux requires GTK3, which on some distributions is compiled with an **X11 dependency**. If you are on a **pure Wayland** environment (no XWayland, or a GTK build without X11 support), the build will fail during the linking phase with errors related to missing X11 libraries. This is a system-level GTK limitation, not a project bug.
+>
+> If you encounter this, either run under XWayland or switch to an Android emulator / real device for development.
 
 ---
 
@@ -55,8 +90,8 @@ The Android build is configured so that **debug and release builds can be instal
 
 | Build type | Application ID | App name |
 |-----------|----------------|----------|
-| Debug | `com.hihusky.quiz.debug` | Quiz (test) |
-| Release | `com.hihusky.quiz` | Quiz |
+| Debug | `com.hihusky.mnema.debug` | Mnema (test) |
+| Release | `com.hihusky.mnema` | Mnema |
 
 This is set in `android/app/build.gradle.kts`:
 
@@ -64,10 +99,10 @@ This is set in `android/app/build.gradle.kts`:
 buildTypes {
     debug {
         applicationIdSuffix = ".debug"
-        resValue("string", "app_name", "Quiz (test)")
+        resValue("string", "app_name", "Mnema (test)")
     }
     release {
-        resValue("string", "app_name", "Quiz")
+        resValue("string", "app_name", "Mnema")
     }
 }
 ```
@@ -98,8 +133,8 @@ Generated files (`app_localizations.dart`, `_en.dart`, `_zh.dart`) are committed
 lib/
   main.dart                  # App entry point, providers, MaterialApp
   models/                    # Data classes (Question, Book, Section, …)
-  providers/                 # SettingsProvider, QuizProvider
-  screens/                   # HomeScreen, QuizScreen, SettingsScreen, TestResultScreen
+  providers/                 # SettingsProvider, StudyProvider
+  screens/                   # HomeScreen, StudyScreen, SettingsScreen, TestResultScreen
   services/                  # DatabaseService, PackageService, AiService, …
   theme/                     # AppTheme (light/dark, Material 3)
   utils/                     # ToastUtils, …
@@ -107,28 +142,46 @@ lib/
   l10n/                      # ARB files + generated localizations
 assets/
   sounds/                    # Streak / wrong-answer audio
-  packages/                  # sample-quiz.zip (bundled, auto-imported on first launch)
+  packages/                  # sample-package.zip (bundled, auto-imported on first launch)
 ```
 
 ---
 
-## Quiz Package Format
+## Package Format
 
-A quiz package is a `.zip` (or `.quizpkg`) archive that contains a `data.json` file at its root (or one directory level deep — the app flattens the structure automatically).
+A package is a `.zip` (or `.mnemapkg`) archive that contains a `data.json` file at its root (or one directory level deep — the app flattens the structure automatically).
 
-### `data.json` schema
+### Quick authoring workflow
+
+```bash
+# 1. Create a folder with data.json and optional images/
+mkdir my-quiz && cd my-quiz
+# ... edit data.json ...
+
+# 2. Validate
+python tools/validate_package.py data.json
+
+# 3. Build the distributable ZIP
+python tools/build_package.py . ../output
+
+# 4. Re-validate the final package
+python tools/validate_package.py ../output/my-quiz.zip
+```
+
+See [`docs/package_creator_guide.md`](docs/package_creator_guide.md) for the full tutorial, and [`examples/minimal-package/`](examples/minimal-package/) for a working example covering all question types.
+
+### `data.json` schema (minimal example)
 
 ```jsonc
 {
+  "protocol_version": "2.0",
   "subject_name_zh": "示例题库",
-  "subject_name_en": "Sample Quiz",
+  "subject_name_en": "sample-package",
   "chapters": [
     {
-      "id": "ch1",
       "title": "Chapter 1",
       "sections": [
         {
-          "id": "sec1",
           "title": "Section 1.1",
           "questions": [
             {
@@ -149,9 +202,7 @@ A quiz package is a `.zip` (or `.quizpkg`) archive that contains a `data.json` f
 }
 ```
 
-Choice content supports **Markdown** and **LaTeX** (`$...$` inline, `$$...$$` block).
-
-Images can be included in the archive alongside `data.json` and referenced with relative paths in `content` or `explanation`.
+Choice text supports **Markdown** and **LaTeX** (`$...$` inline, `$$...$$` block). Images are referenced with standard Markdown syntax and placed in an `images/` folder inside the ZIP.
 
 ---
 

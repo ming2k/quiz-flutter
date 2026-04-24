@@ -147,7 +147,7 @@ class _StatsDisplayState extends State<StatsDisplay> {
                 _buildStatChip(
                   icon: Icons.timer,
                   label: _elapsedTime,
-                  color: Colors.orange,
+                  color: AppTheme.warning,
                 ),
               ],
             ],

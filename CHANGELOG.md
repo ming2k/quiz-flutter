@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- **Project Rename**: The project has been renamed from **Quiz App** to **Mnema**. All package names, application IDs, imports, and documentation have been updated accordingly.
+- **Platform Focus**: Documentation now explicitly states that **Android is the primary target platform**.
+- **Linux Build Note**: Added documentation about GTK3's X11 dependency, which causes build failures on pure Wayland systems.
+
 ## [1.2.2] - 2026-04-02
 
 ### Changed

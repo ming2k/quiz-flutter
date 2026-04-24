@@ -1,5 +1,5 @@
-name: quiz_app
-description: "A general extensible quiz framework for learning and practice."
+name: mnema
+description: "An elegant learning companion for memory and mastery."
 publish_to: 'none'
 version: 1.2.2
 
@@ -17,6 +17,7 @@ dependencies:
 
   # Database
   sqflite: ^2.4.2
+  sqflite_common_ffi: ^2.3.4+4
   path: ^1.9.1
   path_provider: ^2.1.5
 
@@ -52,15 +53,24 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  shared_preferences_platform_interface: ^2.4.1
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name: sqlite3
+      name_windows: winsqlite3
 
 flutter:
   generate: true
   uses-material-design: true
 
   assets:
+    - assets/images/
     - assets/sounds/
     - assets/packages/
-    - assets/packages/sample-quiz.zip
+    - assets/packages/sample-package.zip
 
 #  fonts:
 #    - family: NotoSansSC

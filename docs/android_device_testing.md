@@ -1,6 +1,6 @@
 # Android Device Connect & Test
 
-Guide for connecting an Android device and running the Quiz app during development.
+Guide for connecting an Android device and running the Mnema app during development.
 
 ## Prerequisites
 
@@ -58,10 +58,10 @@ Then verify with `flutter devices`.
 ## 4. Run the App
 
 ```bash
-# Debug build (installs as "Quiz (test)" with ID com.hihusky.quiz.debug)
+# Debug build (installs as "Mnema (test)" with ID com.hihusky.mnema.debug)
 flutter run
 
-# Release build (installs as "Quiz" with ID com.hihusky.quiz)
+# Release build (installs as "Mnema" with ID com.hihusky.mnema)
 flutter run --release
 ```
 
@@ -116,10 +116,10 @@ adb exec-out screencap -p > screenshot.png
 adb install build/app/outputs/flutter-apk/app-debug.apk
 
 # Uninstall debug build
-adb uninstall com.hihusky.quiz.debug
+adb uninstall com.hihusky.mnema.debug
 
 # Uninstall release build
-adb uninstall com.hihusky.quiz
+adb uninstall com.hihusky.mnema
 ```
 
 ## 7. Using an Emulator

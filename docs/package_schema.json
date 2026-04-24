@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/your-org/mnema/blob/main/docs/package_schema.json",
+  "title": "Mnema Package",
+  "description": "Schema for Mnema question bank packages (Protocol 2.0)",
+  "type": "object",
+  "required": ["subject_name_zh", "subject_name_en", "chapters"],
+  "properties": {
+    "protocol_version": {
+      "type": "string",
+      "enum": ["1.0", "2.0"],
+      "description": "Package format version. Defaults to 1.0 if omitted."
+    },
+    "subject_name_zh": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name in Chinese (e.g., '船舶管理')"
+    },
+    "subject_name_en": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Machine identifier in English (e.g., 'ship-management')"
+    },
+    "chapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/chapter"
+      }
+    }
+  },
+  "definitions": {
+    "chapter": {
+      "type": "object",
+      "required": ["title", "sections"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/section"
+          }
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "required": ["title", "questions"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/question"
+          }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "required": ["content"],
+      "properties": {
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Question stem. Supports Markdown and LaTeX."
+        },
+        "choices": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/choice"
+          }
+        },
+        "answer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Correct answer key, must match one of the choice keys."
+        },
+        "explanation": {
+          "type": "string",
+          "description": "Detailed explanation. Supports Markdown and LaTeX."
+        },
+        "question_type": {
+          "type": "string",
+          "enum": [
+            "multiple_choice",
+            "true_false",
+            "fill_blank",
+            "cloze",
+            "flashcard",
+            "passage"
+          ],
+          "default": "multiple_choice"
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "description": "Categorization tags."
+        },
+        "difficulty": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 5.0,
+          "default": 2.5
+        },
+        "note": {
+          "type": "string",
+          "description": "Creator or user note. Supports Markdown."
+        },
+        "front_template": {
+          "type": "string",
+          "description": "Custom front template for flashcard type."
+        },
+        "back_template": {
+          "type": "string",
+          "description": "Custom back template for flashcard type."
+        },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Nested sub-questions for reading comprehension passages.",
+          "items": {
+            "$ref": "#/definitions/question"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "description": "Choice-based question.",
+          "required": ["choices", "answer"]
+        },
+        {
+          "description": "Answer-reveal question.",
+          "required": ["answer"],
+          "properties": {
+            "question_type": {
+              "enum": ["fill_blank", "cloze", "flashcard"]
+            }
+          }
+        },
+        {
+          "description": "Passage or stimulus with nested sub-questions.",
+          "required": ["questions"]
+        }
+      ]
+    },
+    "choice": {
+      "type": "object",
+      "required": ["key"],
+      "anyOf": [
+        {"required": ["content"]},
+        {"required": ["html"]},
+        {"required": ["text"]}
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Choice identifier (e.g., 'A', 'B', 'C')"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Choice text. Supports Markdown and LaTeX. Preferred field."
+        },
+        "html": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Alternative to content. Rich HTML choice text."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Alternative to content. Legacy field accepted by some tools."
+        }
+      }
+    }
+  }
+}

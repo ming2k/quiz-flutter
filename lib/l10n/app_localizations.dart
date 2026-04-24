@@ -101,13 +101,13 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Quiz'**
+  /// **'Mnema'**
   String get appTitle;
 
   /// No description provided for @appSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'General Extensible Quiz Framework'**
+  /// **'An Elegant Learning Companion'**
   String get appSubtitle;
 
   /// No description provided for @selectQuestionBank.
@@ -266,6 +266,12 @@ abstract class AppLocalizations {
   /// **'Analysis'**
   String get analysis;
 
+  /// No description provided for @answer.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get answer;
+
   /// No description provided for @aiExplain.
   ///
   /// In en, this message translates to:
@@ -368,6 +374,114 @@ abstract class AppLocalizations {
   /// **'View History'**
   String get viewHistory;
 
+  /// No description provided for @showAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Answer'**
+  String get showAnswer;
+
+  /// No description provided for @memoryReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory Review'**
+  String get memoryReview;
+
+  /// No description provided for @complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get complete;
+
+  /// No description provided for @noReviewQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions to review'**
+  String get noReviewQuestions;
+
+  /// No description provided for @reviewComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Complete!'**
+  String get reviewComplete;
+
+  /// No description provided for @reviewedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewed {count} questions'**
+  String reviewedCount(int count);
+
+  /// No description provided for @srsAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get srsAgain;
+
+  /// No description provided for @srsHard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard'**
+  String get srsHard;
+
+  /// No description provided for @srsGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get srsGood;
+
+  /// No description provided for @srsEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'Easy'**
+  String get srsEasy;
+
+  /// No description provided for @review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get review;
+
+  /// No description provided for @srsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get srsNew;
+
+  /// No description provided for @srsLearning.
+  ///
+  /// In en, this message translates to:
+  /// **'Learning'**
+  String get srsLearning;
+
+  /// No description provided for @srsReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Due'**
+  String get srsReview;
+
+  /// No description provided for @reviewMistakes.
+  ///
+  /// In en, this message translates to:
+  /// **'Review Mistakes'**
+  String get reviewMistakes;
+
+  /// No description provided for @retakeTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake Test'**
+  String get retakeTest;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get version;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:
@@ -410,10 +524,22 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get language;
 
+  /// No description provided for @languageChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'中文'**
+  String get languageChinese;
+
+  /// No description provided for @languageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
   /// No description provided for @quizExperience.
   ///
   /// In en, this message translates to:
-  /// **'Quiz Experience'**
+  /// **'Study Experience'**
   String get quizExperience;
 
   /// No description provided for @autoAdvance.
@@ -463,6 +589,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Vibrate on answer'**
   String get hapticFeedbackDesc;
+
+  /// No description provided for @continuousFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'Continuous Feedback'**
+  String get continuousFeedback;
+
+  /// No description provided for @continuousFeedbackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Escalating sound & haptics on streaks'**
+  String get continuousFeedbackDesc;
 
   /// No description provided for @confettiEffect.
   ///
@@ -601,6 +739,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get clear;
+
+  /// No description provided for @noQuestions.
+  ///
+  /// In en, this message translates to:
+  /// **'No questions available'**
+  String get noQuestions;
+
+  /// No description provided for @noBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'No Books Yet'**
+  String get noBooks;
+
+  /// No description provided for @noBooksDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a study package to get started'**
+  String get noBooksDesc;
 
   /// No description provided for @importPackage.
   ///

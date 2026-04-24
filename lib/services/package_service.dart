@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:archive/archive.dart';
-import 'package:archive/archive_io.dart'; // For ZipDecoder if needed, and InputFileStream if we used it, but mainly for consistent types. 
+import 'package:archive/archive_io.dart'; // For ZipDecoder if needed, and InputFileStream if we used it, but mainly for consistent types.
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'database_service.dart';
@@ -14,18 +14,14 @@ class ImportResult {
   final String? errorMessage;
   final String? packageName;
 
-  ImportResult.success(this.packageName)
-      : success = true,
-        errorMessage = null;
+  ImportResult.success(this.packageName) : success = true, errorMessage = null;
 
-  ImportResult.cancelled() 
-      : success = false,
-        errorMessage = null,
-        packageName = null;
+  ImportResult.cancelled()
+    : success = false,
+      errorMessage = null,
+      packageName = null;
 
-  ImportResult.error(this.errorMessage)
-      : success = false,
-        packageName = null;
+  ImportResult.error(this.errorMessage) : success = false, packageName = null;
 
   bool get isCancelled => !success && errorMessage == null;
 }
@@ -52,20 +48,24 @@ class PackageService {
   }
 
   /// Helper to extract archive manually to avoid issues with extractArchiveToDisk
-  Future<void> _extractArchive(Archive archive, Directory destDir, {ImportProgressCallback? onProgress}) async {
+  Future<void> _extractArchive(
+    Archive archive,
+    Directory destDir, {
+    ImportProgressCallback? onProgress,
+  }) async {
     for (int i = 0; i < archive.length; i++) {
       final file = archive[i];
       final filename = file.name;
-      
+
       // Basic security check
-      if (filename.contains('..')) continue; 
+      if (filename.contains('..')) continue;
 
       final destPath = p.join(destDir.path, filename);
-      
+
       if (file.isFile) {
         final outFile = File(destPath);
         await outFile.parent.create(recursive: true);
-        
+
         // file.content is dynamic (List<int> or InputStream)
         // We cast to List<int> assuming it's loaded in memory or compatible
         final data = file.content as List<int>;
@@ -73,18 +73,23 @@ class PackageService {
       } else {
         await Directory(destPath).create(recursive: true);
       }
-      
+
       // Update progress occasionally
       if (onProgress != null && i % 20 == 0) {
         // Map 0..1 to 0.3..0.5 in the main flow
-        onProgress('Extracting... ${(i / archive.length * 100).toInt()}%', 0.3 + (i / archive.length) * 0.2);
+        onProgress(
+          'Extracting... ${(i / archive.length * 100).toInt()}%',
+          0.3 + (i / archive.length) * 0.2,
+        );
       }
     }
   }
 
   /// Import a package with progress reporting
   /// Returns [ImportResult] indicating success, cancellation, or error
-  Future<ImportResult> importPackage({ImportProgressCallback? onProgress}) async {
+  Future<ImportResult> importPackage({
+    ImportProgressCallback? onProgress,
+  }) async {
     try {
       // 1. Pick File
       onProgress?.call('Selecting file...', null);
@@ -101,8 +106,12 @@ class PackageService {
       String fileName = p.basename(path);
 
       // Validate file extension
-      if (!path.toLowerCase().endsWith('.zip') && !path.toLowerCase().endsWith('.quizpkg')) {
-        return ImportResult.error('Invalid file type. Please select a .zip or .quizpkg file.');
+      if (!path.toLowerCase().endsWith('.zip') &&
+          !path.toLowerCase().endsWith('.quizpkg') &&
+          !path.toLowerCase().endsWith('.mnemapkg')) {
+        return ImportResult.error(
+          'Invalid file type. Please select a .zip, .quizpkg, or .mnemapkg file.',
+        );
       }
 
       File zipFile = File(path);
@@ -122,7 +131,8 @@ class PackageService {
       }
 
       String packageName = p.basenameWithoutExtension(zipFile.path);
-      String packageId = '${packageName}_${DateTime.now().millisecondsSinceEpoch}';
+      String packageId =
+          '${packageName}_${DateTime.now().millisecondsSinceEpoch}';
       final destDir = Directory(p.join(packagesDir.path, packageId));
 
       // 3. Unzip
@@ -132,7 +142,9 @@ class PackageService {
       try {
         final bytes = await zipFile.readAsBytes();
         if (bytes.isEmpty) {
-          return ImportResult.error('Failed to read package file. The file appears to be empty.');
+          return ImportResult.error(
+            'Failed to read package file. The file appears to be empty.',
+          );
         }
 
         final archive = ZipDecoder().decodeBytes(bytes);
@@ -149,7 +161,6 @@ class PackageService {
 
         // Manual extraction
         await _extractArchive(archive, destDir, onProgress: onProgress);
-        
       } catch (e) {
         return ImportResult.error('Failed to extract package: $e');
       }
@@ -208,9 +219,13 @@ class PackageService {
         // Try finding any json file
         try {
           final entities = await destDir.list().toList();
-          final jsonFiles = entities.where(
-            (e) => e.path.endsWith('.json') && !e.path.endsWith('manifest.json')
-          ).toList();
+          final jsonFiles = entities
+              .where(
+                (e) =>
+                    e.path.endsWith('.json') &&
+                    !e.path.endsWith('manifest.json'),
+              )
+              .toList();
 
           if (jsonFiles.isEmpty) {
             // Clean up extracted files on error
@@ -223,7 +238,7 @@ class PackageService {
             return ImportResult.error(
               'Invalid package structure: No data.json found.\n\n'
               'The package should contain a data.json file with questions.\n\n'
-              '$fileList'
+              '$fileList',
             );
           }
 
@@ -251,7 +266,6 @@ class PackageService {
 
       onProgress?.call('Complete!', 1.0);
       return ImportResult.success(packageName);
-
     } catch (e) {
       return ImportResult.error('Unexpected error: $e');
     }
@@ -279,24 +293,24 @@ class PackageService {
       return 'Failed to import data: $e';
     }
   }
-  
+
   // Helper to get image root for a package
   Future<String?> getPackageImagePath(String packageId) async {
     final appDir = await getApplicationDocumentsDirectory();
     final packageDir = Directory(p.join(appDir.path, 'packages', packageId));
-    
+
     // Always return the package root directory.
     // Since data.json is located here, relative paths in the HTML (e.g., "images/pic.png")
     // should be resolved relative to this directory.
     if (await packageDir.exists()) {
       return packageDir.path;
     }
-    
+
     return null;
   }
 
   /// Import a built-in package from assets
-  /// [assetPath] should be like 'assets/packages/sample-quiz.zip'
+  /// [assetPath] should be like 'assets/packages/sample-package.zip'
   Future<ImportResult> importBuiltInPackage(String assetPath) async {
     try {
       // Load from assets
@@ -331,7 +345,6 @@ class PackageService {
 
         // Manual extraction
         await _extractArchive(archive, destDir);
-        
       } catch (e) {
         return ImportResult.error('Failed to extract built-in package: $e');
       }
@@ -342,9 +355,12 @@ class PackageService {
       if (!await dataFile.exists()) {
         // Try finding any json file
         final entities = await destDir.list().toList();
-        final jsonFiles = entities.where(
-          (e) => e.path.endsWith('.json') && !e.path.endsWith('manifest.json')
-        ).toList();
+        final jsonFiles = entities
+            .where(
+              (e) =>
+                  e.path.endsWith('.json') && !e.path.endsWith('manifest.json'),
+            )
+            .toList();
 
         if (jsonFiles.isEmpty) {
           await _safeDelete(destDir);

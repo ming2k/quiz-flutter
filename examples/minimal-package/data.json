@@ -1,0 +1,126 @@
+{
+  "protocol_version": "2.0",
+  "subject_name_zh": "示例科目",
+  "subject_name_en": "example-subject",
+  "chapters": [
+    {
+      "title": "第一章：基础知识",
+      "sections": [
+        {
+          "title": "1.1 选择题",
+          "questions": [
+            {
+              "content": "太阳系中最大的行星是哪一颗？",
+              "choices": [
+                {"key": "A", "content": "地球"},
+                {"key": "B", "content": "木星"},
+                {"key": "C", "content": "土星"},
+                {"key": "D", "content": "火星"}
+              ],
+              "answer": "B",
+              "explanation": "木星是太阳系中体积和质量最大的行星。",
+              "tags": ["天文学", "行星"],
+              "difficulty": 2.0
+            },
+            {
+              "content": "水的化学式是______。",
+              "choices": [
+                {"key": "A", "content": "CO₂"},
+                {"key": "B", "content": "H₂O"},
+                {"key": "C", "content": "O₂"},
+                {"key": "D", "content": "NaCl"}
+              ],
+              "answer": "B",
+              "explanation": "水由两个氢原子和一个氧原子组成，化学式为 H₂O。",
+              "tags": ["化学", "基础"],
+              "difficulty": 1.5
+            }
+          ]
+        },
+        {
+          "title": "1.2 判断题",
+          "questions": [
+            {
+              "content": "光在真空中的传播速度约为 30 万公里每秒。",
+              "question_type": "true_false",
+              "choices": [
+                {"key": "A", "content": "正确"},
+                {"key": "B", "content": "错误"}
+              ],
+              "answer": "A",
+              "explanation": "光速约为 299,792,458 m/s，即约 30 万公里每秒。",
+              "tags": ["物理"],
+              "difficulty": 2.5
+            }
+          ]
+        },
+        {
+          "title": "1.3 填空题",
+          "questions": [
+            {
+              "content": "人体内含量最多的元素是______。",
+              "question_type": "fill_blank",
+              "answer": "氧",
+              "explanation": "人体约 65% 的质量由氧元素构成，主要存在于水和有机物中。",
+              "tags": ["生物", "人体"],
+              "difficulty": 3.0
+            }
+          ]
+        },
+        {
+          "title": "1.4 卡片",
+          "questions": [
+            {
+              "content": "什么是光合作用？",
+              "question_type": "flashcard",
+              "answer": "绿色植物利用光能将二氧化碳和水转化为有机物并释放氧气的过程。",
+              "explanation": "光合作用是地球上几乎所有生命能量的最初来源。",
+              "tags": ["生物", "植物"],
+              "difficulty": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "第二章：阅读理解",
+      "sections": [
+        {
+          "title": "2.1  passages",
+          "questions": [
+            {
+              "content": "恐龙是生活在中生代的一类爬行动物，支配全球陆地生态系统超过 1.6 亿年。恐龙最早出现在约 2.3 亿年前的三叠纪，在侏罗纪和白垩纪达到鼎盛，最终于约 6600 万年前的白垩纪末期灭绝。",
+              "question_type": "passage",
+              "questions": [
+                {
+                  "content": "恐龙支配全球陆地生态系统大约多长时间？",
+                  "choices": [
+                    {"key": "A", "content": "约 1 亿年"},
+                    {"key": "B", "content": "约 1.6 亿年"},
+                    {"key": "C", "content": "约 2.3 亿年"},
+                    {"key": "D", "content": "约 6600 万年"}
+                  ],
+                  "answer": "B",
+                  "explanation": "文中明确提到恐龙支配全球陆地生态系统超过 1.6 亿年。",
+                  "tags": ["古生物"]
+                },
+                {
+                  "content": "恐龙最早出现在哪个地质年代？",
+                  "choices": [
+                    {"key": "A", "content": "侏罗纪"},
+                    {"key": "B", "content": "白垩纪"},
+                    {"key": "C", "content": "三叠纪"},
+                    {"key": "D", "content": "石炭纪"}
+                  ],
+                  "answer": "C",
+                  "explanation": "文中提到恐龙最早出现在约 2.3 亿年前的三叠纪。",
+                  "tags": ["古生物"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

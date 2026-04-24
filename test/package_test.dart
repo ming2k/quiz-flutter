@@ -2,34 +2,48 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:quiz_app/models/question.dart';
+import 'package:mnema/models/question.dart';
+import 'package:mnema/services/database_service.dart';
 
 void main() {
   final outputDir = Directory('output');
 
   group('Package Format Tests', () {
     test('output directory exists', () {
-      expect(outputDir.existsSync(), isTrue, reason: 'output directory should exist');
+      expect(
+        outputDir.existsSync(),
+        isTrue,
+        reason: 'output directory should exist',
+      );
     });
 
     test('packages have valid zip format', () {
-      final zipFiles = outputDir.listSync()
+      final zipFiles = outputDir
+          .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.zip'))
           .toList();
 
-      expect(zipFiles.isNotEmpty, isTrue, reason: 'Should have at least one zip package');
+      expect(
+        zipFiles.isNotEmpty,
+        isTrue,
+        reason: 'Should have at least one zip package',
+      );
 
       for (final zipFile in zipFiles) {
         final bytes = zipFile.readAsBytesSync();
         final archive = ZipDecoder().decodeBytes(bytes);
-        expect(archive.files.isNotEmpty, isTrue,
-            reason: '${zipFile.path} should contain files');
+        expect(
+          archive.files.isNotEmpty,
+          isTrue,
+          reason: '${zipFile.path} should contain files',
+        );
       }
     });
 
     test('each package contains valid JSON structure', () {
-      final zipFiles = outputDir.listSync()
+      final zipFiles = outputDir
+          .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.zip'))
           .toList();
@@ -41,26 +55,40 @@ void main() {
         // Find the JSON file
         final jsonFile = archive.files.firstWhere(
           (f) => f.name.endsWith('.json'),
-          orElse: () => throw Exception('No JSON file found in ${zipFile.path}'),
+          orElse: () =>
+              throw Exception('No JSON file found in ${zipFile.path}'),
         );
 
         final jsonContent = utf8.decode(jsonFile.content as List<int>);
         final data = jsonDecode(jsonContent) as Map<String, dynamic>;
 
         // Validate required fields
-        expect(data.containsKey('subject_name_zh'), isTrue,
-            reason: '${zipFile.path} should have subject_name_zh');
-        expect(data.containsKey('subject_name_en'), isTrue,
-            reason: '${zipFile.path} should have subject_name_en');
-        expect(data.containsKey('chapters'), isTrue,
-            reason: '${zipFile.path} should have chapters');
-        expect(data['chapters'], isList,
-            reason: '${zipFile.path} chapters should be a list');
+        expect(
+          data.containsKey('subject_name_zh'),
+          isTrue,
+          reason: '${zipFile.path} should have subject_name_zh',
+        );
+        expect(
+          data.containsKey('subject_name_en'),
+          isTrue,
+          reason: '${zipFile.path} should have subject_name_en',
+        );
+        expect(
+          data.containsKey('chapters'),
+          isTrue,
+          reason: '${zipFile.path} should have chapters',
+        );
+        expect(
+          data['chapters'],
+          isList,
+          reason: '${zipFile.path} chapters should be a list',
+        );
       }
     });
 
     test('all packages have valid question structure', () {
-      final zipFiles = outputDir.listSync()
+      final zipFiles = outputDir
+          .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.zip'))
           .toList();
@@ -78,26 +106,36 @@ void main() {
 
         final chapters = data['chapters'] as List;
         int totalQuestions = 0;
-        int passageQuestions = 0; // Questions without choices (reading passages)
+        int passageQuestions =
+            0; // Questions without choices (reading passages)
 
         for (final chapter in chapters) {
           expect(chapter, isA<Map<String, dynamic>>());
-          expect(chapter['title'], isNotNull,
-              reason: 'Chapter should have a title');
+          expect(
+            chapter['title'],
+            isNotNull,
+            reason: 'Chapter should have a title',
+          );
 
           final sections = chapter['sections'] as List?;
           if (sections != null) {
             for (final section in sections) {
               expect(section, isA<Map<String, dynamic>>());
-              expect(section['title'], isNotNull,
-                  reason: 'Section should have a title');
+              expect(
+                section['title'],
+                isNotNull,
+                reason: 'Section should have a title',
+              );
 
               final questions = section['questions'] as List?;
               if (questions != null) {
                 for (final question in questions) {
                   totalQuestions++;
-                  expect(question['content'], isNotNull,
-                      reason: 'Question should have content');
+                  expect(
+                    question['content'],
+                    isNotNull,
+                    reason: 'Question should have content',
+                  );
 
                   final choices = question['choices'] as List?;
 
@@ -108,15 +146,24 @@ void main() {
                   }
 
                   // Regular multiple-choice question
-                  expect(question['answer'], isNotNull,
-                      reason: 'Multiple-choice question should have answer');
+                  expect(
+                    question['answer'],
+                    isNotNull,
+                    reason: 'Multiple-choice question should have answer',
+                  );
 
                   for (final choice in choices) {
-                    expect(choice['key'], isNotNull,
-                        reason: 'Choice should have key');
+                    expect(
+                      choice['key'],
+                      isNotNull,
+                      reason: 'Choice should have key',
+                    );
                     // Check for text field - this is what the packages actually use
-                    expect(choice['text'] ?? choice['html'] ?? choice['content'], isNotNull,
-                        reason: 'Choice should have text/html/content');
+                    expect(
+                      choice['text'] ?? choice['html'] ?? choice['content'],
+                      isNotNull,
+                      reason: 'Choice should have text/html/content',
+                    );
                   }
                 }
               }
@@ -124,9 +171,14 @@ void main() {
           }
         }
 
-        print('${zipFile.path}: $totalQuestions questions ($passageQuestions passages)');
-        expect(totalQuestions, greaterThan(0),
-            reason: '${zipFile.path} should have at least one question');
+        print(
+          '${zipFile.path}: $totalQuestions questions ($passageQuestions passages)',
+        );
+        expect(
+          totalQuestions,
+          greaterThan(0),
+          reason: '${zipFile.path} should have at least one question',
+        );
       }
     });
   });
@@ -139,7 +191,7 @@ void main() {
       });
 
       expect(choice.key, equals('A'));
-      expect(choice.html, equals('Answer with <b>HTML</b>'));
+      expect(choice.content, equals('Answer with <b>HTML</b>'));
     });
 
     test('parses standard format with content field', () {
@@ -149,7 +201,7 @@ void main() {
       });
 
       expect(choice.key, equals('B'));
-      expect(choice.html, equals('Answer content'));
+      expect(choice.content, equals('Answer content'));
     });
 
     test('parses format with text field (used by packages)', () {
@@ -159,19 +211,18 @@ void main() {
       });
 
       expect(choice.key, equals('C'));
-      // This test will FAIL with current implementation
-      // because QuestionChoice.fromJson doesn't handle 'text' field
-      expect(choice.html, equals('specified by international authorities'),
-          reason: 'QuestionChoice should parse text field');
+      expect(
+        choice.content,
+        equals('specified by international authorities'),
+        reason: 'QuestionChoice should parse text field',
+      );
     });
 
     test('parses single entry map format', () {
-      final choice = QuestionChoice.fromJson({
-        'D': 'Single entry choice',
-      });
+      final choice = QuestionChoice.fromJson({'D': 'Single entry choice'});
 
       expect(choice.key, equals('D'));
-      expect(choice.html, equals('Single entry choice'));
+      expect(choice.content, equals('Single entry choice'));
     });
   });
 
@@ -196,9 +247,107 @@ void main() {
 
       expect(question.choices.length, equals(4));
       expect(question.choices[0].key, equals('A'));
-      // This will FAIL with current implementation
-      expect(question.choices[0].html, equals('Option A'),
-          reason: 'Choice html should be populated from text field');
+      expect(
+        question.choices[0].content,
+        equals('Option A'),
+        reason: 'Choice content should be populated from text field',
+      );
+    });
+
+    test('parses protocol v2 type and flashcard templates', () {
+      final questionMap = {
+        'id': 2,
+        'book_id': 1,
+        'section_id': 'section_1',
+        'content': 'Front',
+        'choices': '[]',
+        'answer': 'Back',
+        'explanation': 'Details',
+        'question_type': 'flashcard',
+        'front_template': 'Custom front',
+        'back_template': 'Custom back',
+      };
+
+      final question = Question.fromMap(questionMap);
+
+      expect(question.questionType, QuestionType.flashcard);
+      expect(question.isAnswerable, isTrue);
+      expect(question.isChoiceBased, isFalse);
+      expect(question.needsAnswerReveal, isTrue);
+      expect(question.displayFront, 'Custom front');
+      expect(question.displayBack, 'Custom back');
+    });
+
+    test('recognizes passage rows as non-study containers', () {
+      final questionMap = {
+        'id': 3,
+        'book_id': 1,
+        'section_id': 'section_1',
+        'content': 'Shared passage',
+        'choices': '[]',
+        'answer': '',
+        'explanation': '',
+        'question_type': 'passage',
+      };
+
+      final question = Question.fromMap(questionMap);
+
+      expect(question.questionType, QuestionType.passage);
+      expect(question.isPassage, isTrue);
+      expect(question.isAnswerable, isFalse);
+      expect(question.isChoiceBased, isFalse);
+    });
+  });
+
+  group('Package validation for question types', () {
+    Map<String, dynamic> packageWithQuestion(Map<String, dynamic> question) => {
+      'subject_name_zh': 'Sample',
+      'subject_name_en': 'sample',
+      'chapters': [
+        {
+          'title': 'Chapter',
+          'sections': [
+            {
+              'title': 'Section',
+              'questions': [question],
+            },
+          ],
+        },
+      ],
+    };
+
+    test('accepts passage parent with answerable child', () {
+      final errors = DatabaseService().validatePackageData(
+        packageWithQuestion({
+          'question_type': 'passage',
+          'content': 'Shared passage',
+          'questions': [
+            {
+              'question_type': 'multiple_choice',
+              'content': 'Child question',
+              'choices': [
+                {'key': 'A', 'content': 'First'},
+                {'key': 'B', 'content': 'Second'},
+              ],
+              'answer': 'A',
+            },
+          ],
+        }),
+      );
+
+      expect(errors, isEmpty);
+    });
+
+    test('rejects unsupported question type', () {
+      final errors = DatabaseService().validatePackageData(
+        packageWithQuestion({
+          'question_type': 'essay',
+          'content': 'Explain this topic.',
+          'answer': 'Expected answer',
+        }),
+      );
+
+      expect(errors.single, contains('Unsupported question_type'));
     });
   });
 }

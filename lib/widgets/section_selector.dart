@@ -97,7 +97,7 @@ class SectionSelector extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: isSelected
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.grey,
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
       ),
       selected: isSelected,

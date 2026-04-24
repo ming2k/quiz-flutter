@@ -18,12 +18,12 @@ lib/
 │   ├── test_history.dart
 │   └── models.dart        # Barrel export
 ├── providers/             # State management
-│   ├── quiz_provider.dart
+│   ├── study_provider.dart
 │   ├── settings_provider.dart
 │   └── providers.dart     # Barrel export
 ├── screens/               # UI screens
 │   ├── home_screen.dart
-│   ├── quiz_screen.dart
+│   ├── study_screen.dart
 │   ├── settings_screen.dart
 │   ├── overview_screen.dart
 │   ├── test_result_screen.dart
@@ -52,15 +52,16 @@ lib/
 ### 1. Presentation Layer (UI)
 - **Screens**: Located in `lib/screens/`. Main entry point is `HomeScreen`.
 - **Widgets**: Reusable UI components in `lib/widgets/`. 
-    - `QuizQuestionDisplay`: The primary widget for rendering exam questions. It includes logic to display parent passages (for reading comprehension) above sub-questions.
+    - `QuestionDisplay`: The primary widget for rendering exam questions. It includes logic to display parent passages (for reading comprehension) above sub-questions.
     - `MarkdownContent`: Handles Markdown and LaTeX rendering, including local image resolution.
 
 ### 2. State Management (Providers)
-- **QuizProvider**: Manages the current quiz state. It filters the question list to exclude "passage-only" questions from navigation, while ensuring sub-questions maintain a link to their parent content.
+- **StudyProvider**: Manages the current study state. It filters the question list to exclude "passage-only" questions from navigation, while ensuring sub-questions maintain a link to their parent content.
+- **ReviewProvider**: Builds SRS queues from answerable items only. Passage containers are excluded from scheduling.
 - **SettingsProvider**: Manages app-wide settings like theme mode, locale, and AI configuration.
 
 ### 3. Services (Data & Logic)
-- **DatabaseService**: Interfaces with SQLite. Supports recursive question importing, allowing for reading comprehension passages to be stored as parent questions with linked sub-questions via `parent_id`.
+- **DatabaseService**: Interfaces with SQLite. Supports recursive question importing, allowing for reading comprehension passages to be stored as parent questions with linked sub-questions via `parent_id`. It persists Protocol 2.0 question metadata such as `question_type`, tags, difficulty, notes, and flashcard templates.
 - **StorageService**: Manages persistent simple settings and user progress using modern `SharedPreferencesAsync`.
 - **PackageService**: Handles importing zip-based data packages, including extraction, validation, and built-in package loading from assets.
 - **AiService**: Manages communication with Gemini/Claude APIs for AI-powered question explanations.
@@ -68,9 +69,9 @@ lib/
 
 ## Data Flow
 
-1. On first launch, `QuizProvider` checks for existing books. If none, it imports the built-in sample package via `PackageService`.
+1. On first launch, `StudyProvider` checks for existing books. If none, it imports the built-in sample package via `PackageService`.
 2. User selects a **Book** from the `HomeScreen`.
-3. `QuizProvider` loads the book data from `DatabaseService`.
+3. `StudyProvider` loads the book data from `DatabaseService`.
 4. If the book is an imported package, `PackageService` identifies the local image path.
 5. User answers questions; progress is saved asynchronously via `StorageService`.
 6. Sound feedback is provided via `SoundService` (pre-loaded for instant playback).
@@ -91,15 +92,17 @@ chapters (id, book_id, title, question_count)
 sections (id, book_id, chapter_id, title, question_count)
 
 -- Individual questions
-questions (id, book_id, section_id, parent_id, content, choices, answer, explanation)
+questions (id, book_id, section_id, parent_id, content, choices, answer, explanation, question_type, tags, difficulty, note, front_template, back_template)
 ```
+
+See [Learning Design Notes](design/README.md) for the product model behind study modes, question types, nested question structure, and collection organization.
 
 ## Assets
 
 ```
 assets/
 ├── packages/           # Built-in quiz packages
-│   └── sample-quiz.zip
+│   └── sample-package.zip
 ├── sounds/             # Sound effects
 │   ├── correct.wav
 │   └── wrong.wav

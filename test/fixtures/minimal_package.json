@@ -1,0 +1,147 @@
+{
+  "subject_name_zh": "测试科目",
+  "subject_name_en": "Test Subject",
+  "chapters": [
+    {
+      "title": "Chapter 1: Core Concepts",
+      "sections": [
+        {
+          "title": "1.1 Multiple Choice",
+          "questions": [
+            {
+              "id": 1,
+              "content": "What is the capital of France?",
+              "choices": [
+                {"key": "A", "text": "London"},
+                {"key": "B", "text": "Berlin"},
+                {"key": "C", "text": "Paris"},
+                {"key": "D", "text": "Madrid"}
+              ],
+              "answer": "C",
+              "explanation": "Paris is the capital of France.",
+              "tags": ["geography", "europe"]
+            },
+            {
+              "id": 2,
+              "content": "Which of the following is a prime number?",
+              "choices": [
+                {"key": "A", "text": "4"},
+                {"key": "B", "text": "9"},
+                {"key": "C", "text": "11"},
+                {"key": "D", "text": "15"}
+              ],
+              "answer": "C",
+              "explanation": "11 is only divisible by 1 and itself.",
+              "tags": ["math", "numbers"]
+            }
+          ]
+        },
+        {
+          "title": "1.2 True / False",
+          "questions": [
+            {
+              "id": 3,
+              "content": "The Earth is flat.",
+              "question_type": "true_false",
+              "choices": [
+                {"key": "A", "text": "True"},
+                {"key": "B", "text": "False"}
+              ],
+              "answer": "B",
+              "explanation": "The Earth is an oblate spheroid.",
+              "tags": ["science"]
+            }
+          ]
+        },
+        {
+          "title": "1.3 Fill in the Blank",
+          "questions": [
+            {
+              "id": 4,
+              "content": "Water boils at ___ degrees Celsius at sea level.",
+              "question_type": "fill_blank",
+              "answer": "100",
+              "explanation": "Water boils at 100°C at standard atmospheric pressure.",
+              "tags": ["science", "chemistry"]
+            }
+          ]
+        },
+        {
+          "title": "1.4 Cloze Deletion",
+          "questions": [
+            {
+              "id": 5,
+              "content": "The {{c1::mitochondria}} is the powerhouse of the cell.",
+              "question_type": "cloze",
+              "answer": "mitochondria",
+              "explanation": "Mitochondria generate most of the cell's ATP.",
+              "tags": ["biology"]
+            }
+          ]
+        },
+        {
+          "title": "1.5 Flashcard",
+          "questions": [
+            {
+              "id": 6,
+              "content": "Front: What is the speed of light?",
+              "question_type": "flashcard",
+              "answer": "Approximately 299,792,458 meters per second",
+              "explanation": "In a vacuum, light travels at this exact speed.",
+              "front_template": "What is the speed of light?",
+              "back_template": "Approximately 299,792,458 m/s",
+              "tags": ["physics"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Chapter 2: Reading Comprehension",
+      "sections": [
+        {
+          "title": "2.1 Passage with Sub-questions",
+          "questions": [
+            {
+              "id": 7,
+              "content": "The water cycle, also known as the hydrologic cycle, describes the continuous movement of water on, above, and below the surface of the Earth.",
+              "question_type": "passage",
+              "choices": [],
+              "answer": "",
+              "explanation": "",
+              "tags": ["science", "earth"],
+              "questions": [
+                {
+                  "id": 8,
+                  "content": "What is another name for the water cycle?",
+                  "choices": [
+                    {"key": "A", "text": "Carbon cycle"},
+                    {"key": "B", "text": "Hydrologic cycle"},
+                    {"key": "C", "text": "Nitrogen cycle"},
+                    {"key": "D", "text": "Oxygen cycle"}
+                  ],
+                  "answer": "B",
+                  "explanation": "The passage states it is also known as the hydrologic cycle.",
+                  "tags": ["reading"]
+                },
+                {
+                  "id": 9,
+                  "content": "Which is a major process in the water cycle?",
+                  "choices": [
+                    {"key": "A", "text": "Evaporation"},
+                    {"key": "B", "text": "Photosynthesis"},
+                    {"key": "C", "text": "Respiration"},
+                    {"key": "D", "text": "Digestion"}
+                  ],
+                  "answer": "A",
+                  "explanation": "Evaporation is mentioned in the passage.",
+                  "tags": ["reading"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

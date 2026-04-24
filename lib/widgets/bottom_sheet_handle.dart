@@ -22,7 +22,7 @@ class BottomSheetHandle extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: color ?? Colors.grey.shade300,
+        color: color ?? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(height / 2),
       ),
     );

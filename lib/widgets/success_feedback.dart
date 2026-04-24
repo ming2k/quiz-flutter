@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class SuccessFeedback extends StatefulWidget {
   final Widget child;
@@ -68,12 +69,12 @@ class _SuccessFeedbackState extends State<SuccessFeedback> with SingleTickerProv
                   key: const Key('success_feedback_overlay'),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Colors.green.withValues(alpha: _opacity.value),
+                      color: AppTheme.success.withValues(alpha: _opacity.value),
                       width: 8,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.green.withValues(alpha: _opacity.value * 0.5),
+                        color: AppTheme.success.withValues(alpha: _opacity.value * 0.5),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),

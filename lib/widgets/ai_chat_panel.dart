@@ -25,7 +25,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
   bool _wasStreaming = false;
   int? _lastSessionId;
   double _lastViewInset = 0;
-  QuizProvider? _quiz;
+  PracticeProvider? _quiz;
 
   @override
   void initState() {
@@ -43,7 +43,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final quiz = Provider.of<QuizProvider>(context);
+    final quiz = Provider.of<PracticeProvider>(context);
     if (_quiz != quiz) {
       _quiz?.removeListener(_onQuizChanged);
       _quiz = quiz;
@@ -98,15 +98,25 @@ class _AiChatPanelState extends State<AiChatPanel> {
     }
   }
 
+  AiProvider _mapProvider(String provider) {
+    switch (provider) {
+      case 'kimi':
+        return AiProvider.kimi;
+      case 'gemini':
+      default:
+        return AiProvider.gemini;
+    }
+  }
+
   void _configureAiService() {
     final settings = context.read<SettingsProvider>();
-    final quiz = context.read<QuizProvider>();
+    final quiz = context.read<PracticeProvider>();
 
     quiz.setAiConfigurator((service) {
       service.configure(
         apiKey: settings.aiApiKey,
         baseUrl: settings.aiBaseUrl,
-        provider: AiProvider.gemini,
+        provider: _mapProvider(settings.aiProvider),
         model: settings.aiModel,
       );
     });
@@ -122,7 +132,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final quiz = Provider.of<QuizProvider>(context);
+    final quiz = Provider.of<PracticeProvider>(context);
     final messages = quiz.currentAiChatHistory;
     final aiStream = quiz.currentAiStream;
 
@@ -333,7 +343,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   Widget _buildActionButton(
     BuildContext context,
-    QuizProvider quiz,
+    PracticeProvider quiz,
     bool isStreaming,
     bool hasText,
   ) {
@@ -454,7 +464,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Consumer<QuizProvider>(
+        return Consumer<PracticeProvider>(
           key: const Key('ai_chat_history_consumer'),
           builder: (context, quiz, child) {
             final sessions = quiz.chatSessions;
@@ -593,7 +603,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
 
   void _confirmDeleteSession(
     BuildContext context,
-    QuizProvider quiz,
+    PracticeProvider quiz,
     ChatSession session,
   ) {
     final l10n = AppLocalizations.of(context);
@@ -703,7 +713,7 @@ class _AiChatPanelState extends State<AiChatPanel> {
   Future<void> _sendMessage(String text) async {
     if (text.trim().isEmpty) return;
 
-    final quiz = context.read<QuizProvider>();
+    final quiz = context.read<PracticeProvider>();
     final aiStream = quiz.currentAiStream;
 
     // Only prevent sending if THIS session is already streaming

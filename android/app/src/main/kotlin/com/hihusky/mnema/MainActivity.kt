@@ -1,4 +1,4 @@
-package com.hihusky.quiz
+package com.hihusky.mnema
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -6,7 +6,6 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/quiz_provider.dart';
 
 class MarkdownContent extends StatelessWidget {
   final String content;

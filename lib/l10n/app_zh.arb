@@ -1,8 +1,8 @@
 {
   "@@locale": "zh",
 
-  "appTitle": "Quiz",
-  "appSubtitle": "通用扩展题库练习系统",
+  "appTitle": "Mnema",
+  "appSubtitle": "优雅的学习伴侣",
 
   "selectQuestionBank": "选择题库",
   "selectMode": "选择模式",
@@ -32,6 +32,7 @@
   "showAnalysis": "显示解析",
   "hideAnalysis": "隐藏解析",
   "analysis": "解析",
+  "answer": "答案",
   "aiExplain": "AI 解析",
 
   "overview": "题目概览",
@@ -51,6 +52,30 @@
   "timeTaken": "用时",
   "backToHome": "返回首页",
   "viewHistory": "查看历史",
+  "showAnswer": "显示答案",
+  "memoryReview": "记忆复习",
+  "complete": "完成",
+  "noReviewQuestions": "没有可复习的题目",
+  "aiExplain": "AI 解析",
+  "reviewComplete": "今日复习完成！",
+  "reviewedCount": "本次复习了 {count} 道题目",
+  "@reviewedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "srsAgain": "忘记",
+  "srsHard": "困难",
+  "srsGood": "良好",
+  "srsEasy": "简单",
+  "review": "复习",
+  "srsNew": "新",
+  "srsLearning": "学",
+  "srsReview": "复",
+  "reviewMistakes": "复习错题",
+  "retakeTest": "重新测试",
+  "about": "关于",
+  "version": "版本",
 
   "settings": "设置",
   "appearance": "外观",
@@ -59,7 +84,9 @@
   "themeLight": "浅色",
   "themeDark": "深色",
   "language": "语言",
-  "quizExperience": "练习体验",
+  "languageChinese": "中文",
+  "languageEnglish": "English",
+  "quizExperience": "学习体验",
   "autoAdvance": "自动下一题",
   "autoAdvanceDesc": "答对后自动跳转下一题",
   "showAnalysisOption": "显示解析",
@@ -68,6 +95,8 @@
   "soundEffectsDesc": "答题时播放音效",
   "hapticFeedback": "振动反馈",
   "hapticFeedbackDesc": "答题时振动提示",
+  "continuousFeedback": "连续反馈",
+  "continuousFeedbackDesc": "连击时递进音效和振动",
   "confettiEffect": "彩带效果",
   "confettiEffectDesc": "答对时显示彩带动画",
   "aiSettings": "AI 设置",
@@ -95,6 +124,9 @@
   "ok": "确定",
   "clear": "清除",
 
+  "noQuestions": "暂无题目",
+  "noBooks": "还没有题包",
+  "noBooksDesc": "导入题包开始学习",
   "importPackage": "导入题包",
   "importFailed": "导入失败",
   "importSuccess": "成功导入\"{packageName}\"",

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 
 class DopamineProgressBar extends StatelessWidget {
   final double progress; // 0.0 to 1.0

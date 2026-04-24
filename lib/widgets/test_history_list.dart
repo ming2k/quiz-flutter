@@ -25,8 +25,7 @@ class _TestHistoryListState extends State<TestHistoryList> {
   }
 
   Future<void> _loadHistory() async {
-    final quiz = context.read<QuizProvider>();
-    final entries = await quiz.getTestHistory();
+    final entries = await _storage.getHistoryEntries(null);
     if (mounted) {
       setState(() {
         _entries = entries;
@@ -55,9 +54,9 @@ class _TestHistoryListState extends State<TestHistoryList> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.history, size: 64, color: Colors.grey),
+                      Icon(Icons.history, size: 64, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3)),
                       const SizedBox(height: 16),
-                      Text(AppLocalizations.of(context).noTestHistory, style: const TextStyle(color: Colors.grey)),
+                      Text(AppLocalizations.of(context).noTestHistory, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                     ],
                   ),
                 )
@@ -90,20 +89,20 @@ class _TestHistoryListState extends State<TestHistoryList> {
                 Text(
                   entry.formattedDate,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.timer,
                   size: 14,
-                  color: Colors.grey.shade500,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   entry.formattedDuration,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
               ],
@@ -177,7 +176,7 @@ class _TestHistoryListState extends State<TestHistoryList> {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
       ],

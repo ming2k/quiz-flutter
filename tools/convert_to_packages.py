@@ -97,11 +97,21 @@ def convert_to_package(input_path: str, output_path: str):
             # Transform questions to expected format
             formatted_questions = []
             for q in questions:
+                # Build tags from chapter and section names
+                tags = []
+                chapter_title = chapter.get('title', '')
+                section_title = section.get('title', '')
+                if chapter_title:
+                    tags.append(chapter_title)
+                if section_title and section_title != chapter_title:
+                    tags.append(section_title)
+
                 formatted_q = {
                     'content': fix_latex(q.get('content', '')),
                     'choices': fix_latex_in_dict(q.get('choices', [])),
                     'answer': q.get('answer', ''),
                     'explanation': fix_latex(q.get('explanation', '')),
+                    'tags': tags,
                 }
                 formatted_questions.append(formatted_q)
 

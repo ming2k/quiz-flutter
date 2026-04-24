@@ -1,0 +1,11 @@
+# Mnema Test Configuration
+# Default: only unit tests run (fast, stable, no external deps)
+# Integration tests: flutter test --dart-define=MNEMA_RUN_INTEGRATION=1
+# Widget tests:      flutter test --dart-define=MNEMA_RUN_WIDGET=1
+# All tests:         flutter test --dart-define=MNEMA_RUN_INTEGRATION=1 --dart-define=MNEMA_RUN_WIDGET=1
+
+tags:
+  integration:
+    skip: "Set --dart-define=MNEMA_RUN_INTEGRATION=1 to run integration tests"
+  widget:
+    skip: "Set --dart-define=MNEMA_RUN_WIDGET=1 to run widget tests"
