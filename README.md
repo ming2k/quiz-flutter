@@ -1,3 +1,5 @@
+# THE NEXT NATIVE GENERATION PLS CHECK [mnemora](https://github.com/ming2k/mnemora)
+
 # Mnema
 
 Mnema is a general, extensible learning framework built with Flutter. Supports multiple study modes, AI-powered explanations, Markdown/LaTeX rendering, and a custom quiz package format.
